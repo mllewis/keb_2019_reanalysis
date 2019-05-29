@@ -1,0 +1,181 @@
+---
+title: Distributional semantics as a predictor of human similarity judgments
+subtitle: Texture
+author: Molly Lewis 
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    number_sections: no
+    toc: yes
+---
+  
+******
+
+```{r setup, include = F}
+
+# load packages
+library(rmarkdown)
+library(knitr)
+library(tidyverse)
+library(here)
+library(broom)
+
+opts_chunk$set(echo = T, message = F, warning = F, 
+               error = F, tidy = F, cache = F)
+```
+
+## Language and human similarity data 
+
+```{r}
+
+TIDY_HUMAN_TEXTURE <- here("data/processed/tidy_human_texture_response.csv")
+LANGUAGE_DISTANCE <- here("data/processed/animal_texture_langauge_distances.csv")  
+
+human_data <- read_csv(TIDY_HUMAN_TEXTURE) %>%
+  rename(similarity = prop)
+language_data  <- read_csv(LANGUAGE_DISTANCE) %>%
+  rename(animal = word1, 
+         texture = word2,
+         similarity = language_similarity)  %>%
+  mutate(group = "language")
+
+all_data <- bind_rows(human_data, language_data) %>%
+    mutate(texture = fct_relevel(texture, "scales", "skin", "fur", "feathers"),
+           group = fct_relevel(group, "S", "CB", "language"),
+         animal = fct_relevel(animal,  "goldfish", "snake", "crocodile", "lizard", "eel", "shark", "turtle", "toad",
+                              "dolphin", "frog", "worm", "elephant", "hippo", "rhino", "pig", "platypus", "seal",
+                              "ferret", "gorilla", "sheep", "fox", "bear", "horse", "donkey", "cat", "penguin", "ostrich",
+                              "flamingo", "peacock", "pigeon")) %>%
+  group_by(group) %>%
+  mutate(scaled_similarity = scale(similarity))
+```
+
+```{r, fig.width =10}
+
+# reproduce their figure
+p1 <- all_data %>%
+  filter(group != "language") %>%
+  ggplot(aes(x = texture, y = fct_rev(animal), fill = similarity))  +
+  geom_tile() +
+  facet_wrap(~group) +
+  ylab("animal") +
+  scale_fill_gradient(low = "white", high = "black", limits = c(0,1))  +
+  theme_classic()+
+  theme(legend.position = "bottom")
+  
+  
+# reproduce their figure
+p2 <- all_data %>%
+  filter(group == "language") %>%
+  ggplot(aes(x = texture, y = fct_rev(animal), fill = similarity))  +
+  geom_tile() +
+  facet_wrap(~group) +
+  ylab("animal") +
+  scale_fill_gradient(low = "white", high = "black")  +
+  theme_classic() +
+  theme(legend.position = "bottom")
+
+cowplot::plot_grid(p1, p2, ncol = 2,label_size = 16, rel_widths = c(2,1))
+```
+
+```{r, fig.width =10}
+all_data_correct <- all_data %>% 
+  ungroup()%>%
+  left_join(human_data %>% distinct(animal, texture) %>% mutate(correct = TRUE)) %>%
+  mutate(correct = case_when(is.na(correct) ~ FALSE, TRUE ~ TRUE)) %>%
+      mutate(texture = fct_relevel(texture, "scales", "skin", "fur", "feathers"),
+           group = fct_relevel(group, "S", "CB", "language"),
+         animal = fct_relevel(animal,  "goldfish", "snake", "crocodile", "lizard", "eel", "shark", "turtle", "toad",
+                              "dolphin", "frog", "worm", "elephant", "hippo", "rhino", "pig", "platypus", "seal",
+                              "ferret", "gorilla", "sheep", "fox", "bear", "horse", "donkey", "cat", "penguin", "ostrich",
+                              "flamingo", "peacock", "pigeon"))
+  
+
+# reproduce their figure
+p1 <- all_data_correct %>%
+  filter(group != "language") %>%
+  ggplot(aes(x = texture, y = fct_rev(animal), fill = similarity))  +
+  geom_tile() +
+  facet_wrap(~group) +
+  ylab("animal") +
+  scale_fill_gradient(low = "white", high = "black", limits = c(0,1))  +
+  theme_classic()+
+  theme(legend.position = "bottom")
+  
+  
+# reproduce their figure
+p2 <- all_data_correct %>%
+  filter(group == "language", 
+         correct) %>%
+  ggplot(aes(x = texture, y = fct_rev(animal), fill = similarity))  +
+  geom_tile() +
+  facet_wrap(~group) +
+  ylab("animal") +
+  scale_fill_gradient(low = "white", high = "black")  +
+  theme_classic() +
+  theme(legend.position = "bottom")
+
+cowplot::plot_grid(p1, p2, ncol = 2,label_size = 16, rel_widths = c(2,1))
+
+```
+
+## correlations with human similarity
+
+### raw similarity
+```{r}
+language_only <- all_data_correct %>%
+  filter(group == "language") %>%
+  filter(correct) %>%
+  rename(language_similarity = similarity) %>%
+  ungroup() %>%
+  select(-group, -scaled_similarity, -correct)
+
+lang_raw_comparison <- full_join(language_only, human_data)
+
+ggplot(lang_raw_comparison, aes(x = log(language_similarity), y = similarity, color = group)) +
+  ylab("human similarity") +
+  geom_point(alpha = .8) + 
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+lang_raw_comparison %>%
+  group_by(group) %>%
+  nest() %>%
+  mutate(test = map(data, ~ tidy(cor.test(log(.x$language_similarity), .x$similarity)))) %>%
+  select(-data) %>%
+  unnest() %>%
+  kable()
+```
+
+### correct - mean of incorrect (for language)
+```{r}
+correct_diff <- all_data_correct %>%
+  filter(group == "language") %>%
+  group_by(group, animal, correct) %>%
+  summarize(similarity = mean(similarity)) %>%
+  spread(correct, similarity) %>%
+  mutate(language_similarity = `TRUE` - `FALSE`) %>%
+  select(1,2,5) %>%
+  left_join(human_data %>% distinct(animal, texture)) %>%
+  ungroup() %>%
+  select(-group)
+
+diff_comparison <- full_join(correct_diff, human_data)
+
+ggplot(diff_comparison, aes(x = language_similarity, y = similarity, color = group)) +
+  ylab("human similarity") +
+  geom_point(alpha = .8) + 
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+diff_comparison %>%
+  group_by(group) %>%
+  nest() %>%
+  mutate(test = map(data, ~ tidy(cor.test(.x$language_similarity, .x$similarity)))) %>%
+  select(-data) %>%
+  unnest() %>%
+  kable()
+```
+
+
