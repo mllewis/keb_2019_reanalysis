@@ -1,4 +1,4 @@
-word1,word2,language_similarity,lg10wf,n
+target_word,anchor,language_similarity,lg10wf,n
 ostrich,feathers,0.5745786953168581,1.6902,1
 bird,feathers,0.5183667869109352,3.3653,2
 birds,feathers,0.5172290421234271,3.1209,3

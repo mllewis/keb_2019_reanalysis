@@ -71,7 +71,9 @@ target_anchor_words <- long_word_word_dists %>%
   filter(lg10wf >= 1.5) %>%
   slice(1:50) %>%
   mutate(n = 1:n()) %>%
-  data.frame()
+  data.frame() %>%
+  rename(target_word = word1,
+         anchor = word2)
 
 write_csv(target_anchor_words, OUTPATH)
 
