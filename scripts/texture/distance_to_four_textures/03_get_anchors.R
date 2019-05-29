@@ -4,11 +4,11 @@ library(here)
 library(data.table)
 library(text2vec)
 
-OUTPATH <- here("data/processed/animal_texture_langauge_distances.csv")
+OUTPATH <- here("data/processed/animal_texture_anchor_words.csv")
 WIKIPATH <- "/Users/mollylewis/Documents/research/Projects/1_in_progress/VOCAB_SEEDS/analyses/0_exploration/wiki.en.vec"
 FREQ <- "/Users/mollylewis/Documents/research/Projects/1_in_progress/VOCAB_SEEDS/analyses/1_mtld_measure/data/control_variables/SUBTLEXus_corpus.txt"
 
-TEXURE_WORDS <- c("fur", "scales", "skin", "feathers", "animals", "animal")
+TEXURE_WORDS <- c("fur", "scales", "skin", "feathers", "animals", "animal", "feather", "scale")
 
 wmodel <- fread(
   WIKIPATH,
@@ -54,13 +54,24 @@ animals_nn <- word_word_dists %>%
   slice(1:1000) %>%
   pull(word1)
 
-unique(c(animal_nn, )
+animal_words <- unique(c(animal_nn, animals_nn))
 
-long_word_word_dists %>%
+target_anchor_words <- long_word_word_dists %>%
+  filter(!(word2 %in% c("animal", "animals"))) %>%
+  mutate(word2 = case_when(word2 %in% c("feathers", "feather") ~ "feathers",
+                           word2 %in% c("scales", "scale") ~ "scales", 
+                           TRUE~ word2)) %>%
+  group_by(word1, word2) %>%
+  summarize_if(is.numeric, mean) %>% # deal with cases where there's two for, e.g., feather/feathers
   group_by(word2) %>%
-  filter(word2 != "animal") %>%
   arrange(-language_similarity) %>%
-  slice(1:500) %>%
-  filter(word1 %in% animal_nn) %>%
+  slice(1:10000) %>%
+  filter(word1 %in% animal_words) %>%
+  left_join(freq, by = c("word1" = "word")) %>%
+  filter(lg10wf >= 1.5) %>%
+  slice(1:50) %>%
+  mutate(n = 1:n()) %>%
   data.frame()
+
+write_csv(target_anchor_words, OUTPATH)
 
