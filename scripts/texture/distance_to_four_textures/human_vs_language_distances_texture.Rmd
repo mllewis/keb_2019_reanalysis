@@ -75,8 +75,9 @@ all_data %>%
 
 ## Correlations with human similarity
 
-### raw similarity - all
-```{r, fig.width =10}
+### Raw similarity 
+#### All
+```{r}
 all_language_only <- all_data %>%
   filter(group == "language") %>%
   rename(language_similarity = similarity)  %>%
@@ -92,18 +93,25 @@ ggplot(lang_raw_comparison_all, aes(x = language_similarity, y = similarity, col
   geom_smooth(method = "lm") +
   theme_classic()
 
-lang_raw_comparison_all %>%
+corrs2 <- lang_raw_comparison_all %>%
   group_by(group, set_id) %>%
   nest() %>%
   mutate(test = map(data, ~ tidy(cor.test(.x$language_similarity, .x$similarity)))) %>%
   select(-data) %>%
-  unnest() %>%
-  kable()
+  unnest() 
+
+ggplot(corrs2, aes(x = jitter(set_id), y = estimate, 
+                  group = group, color = group)) +
+  geom_line() + 
+  geom_pointrange(aes(ymin = conf.low, ymax = conf.high))  +
+  geom_hline(aes(yintercept = 0 ), linetype = 2)+
+  xlab("number of anchor words") +
+  ylab("correlation estimate") +
+  theme_classic()
 ```
 
-### raw similarity - correct only
-
-```{r, fig.width =10}
+#### correct only
+```{r}
 correct_human_data <- human_data %>%
   filter(correct == 1) %>%
   select(-correct)
@@ -123,39 +131,63 @@ ggplot(lang_raw_comparison, aes(x = language_similarity, y = similarity, color =
   geom_smooth(method = "lm") +
   theme_classic()
 
-lang_raw_comparison %>%
+corrs1 <- lang_raw_comparison %>%
   group_by(group, set_id) %>%
   nest() %>%
   mutate(test = map(data, ~ tidy(cor.test(.x$language_similarity,
                                           .x$similarity)))) %>%
   select(-data) %>%
-  unnest() %>%
-  kable()
+  unnest()
+
+ggplot(corrs1, aes(x = jitter(set_id), y = estimate, 
+                  group = group, color = group)) +
+  geom_line() + 
+  geom_pointrange(aes(ymin = conf.low, ymax = conf.high))  +
+  geom_hline(aes(yintercept = 0 ), linetype = 2)+
+  xlab("number of anchor words") +
+  ylab("correlation estimate") +
+  theme_classic()
 ```
 
 
-### correct - mean of incorrect (for human and language)
-```{r, fig.width =10}
+### Diff similarity 
+#### All
+```{r}
+get_diff_sim <- function(df, current_texture){
+  #print(df)
+  value = filter(df, texture != current_texture) %>%
+    summarize(incorrect_similarity = mean(similarity)) %>%
+    mutate(correct_similarity = filter(df, texture == current_texture) %>% 
+                pull(similarity),
+           x = correct_similarity - incorrect_similarity) %>%
+    pull(x)
+
+  #print(value)
+  data.frame(similarity = value)
+  
+}
 correct_language_data_diff <- language_data %>%
   select(-group)  %>%
-  right_join(human_data %>% distinct(animal, texture, correct)) %>%
-  rename(language_similarity = similarity) %>%
-  group_by(set_id, animal, correct) %>%
-  summarize(language_similarity = mean(language_similarity)) %>%
-  ungroup() %>%
-  spread(correct, language_similarity) %>%
-  mutate(language_similarity = `1` - `0`) %>%
-  select(set_id, animal, language_similarity) %>%
-  right_join(correct_human_data %>% distinct(animal, texture))
+  group_by(set_id, animal) %>%
+  nest() %>%
+  right_join(language_data %>% distinct(set_id, animal, texture)) %>%
+  mutate(temp = map2(data, texture, get_diff_sim)) %>%
+  select(-data) %>%
+  unnest() %>%
+  rename(language_similarity = similarity)  %>%
+  arrange(set_id, animal, texture)
+
 
 correct_human_data_diff <- human_data %>%
-  group_by(group, animal, correct) %>%
-  summarize(similarity = mean(similarity)) %>%
-  ungroup() %>%
-  spread(correct, similarity) %>%
-  mutate(similarity = `1` - `0`) %>%
-  select(group, animal, similarity) %>%
-  right_join(correct_human_data %>% distinct(animal, texture))
+  select(-correct) %>%
+  group_by(group, animal) %>%
+  nest() %>%
+  right_join(human_data %>% distinct(group, animal, texture)) %>%
+  mutate(temp = map2(data, texture, get_diff_sim)) %>%
+  select(-data) %>%
+  arrange(group, animal, texture) %>%
+  unnest()
+  
 
 diff_comparison_both <- full_join(correct_language_data_diff,
                                   correct_human_data_diff)
@@ -163,7 +195,7 @@ diff_comparison_both <- full_join(correct_language_data_diff,
 ggplot(diff_comparison_both, aes(x = language_similarity,
                             y = similarity, color = group)) +
   ylab("human similarity") +
-  facet_wrap(~set_id)+
+  facet_wrap(~set_id) +
   geom_point(alpha = .8) + 
   geom_smooth(method = "lm") +
   theme_classic()
@@ -175,8 +207,6 @@ corrs <- diff_comparison_both %>%
                                           .x$similarity)))) %>%
   select(-data) %>%
   unnest() 
-
-kable(corrs)
 ```
 
 ```{r}
@@ -188,6 +218,37 @@ ggplot(corrs, aes(x = jitter(set_id), y = estimate,
   xlab("number of anchor words") +
   ylab("correlation estimate") +
   theme_classic()
-
 ```
 
+#### Correct Only
+```{r}
+diff_comparison_both_correct <- diff_comparison_both %>%
+  right_join(correct_human_data %>% select(animal, texture))
+
+ggplot(diff_comparison_both_correct, aes(x = language_similarity,
+                            y = similarity, color = group)) +
+  ylab("human similarity") +
+  facet_wrap(~set_id) +
+  geom_point(alpha = .8) + 
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+corrs3 <- diff_comparison_both_correct %>%
+  group_by(group, set_id) %>%
+  nest() %>%
+  mutate(test = map(data, ~ tidy(cor.test(.x$language_similarity, 
+                                          .x$similarity)))) %>%
+  select(-data) %>%
+  unnest() 
+
+ggplot(corrs3, aes(x = jitter(set_id), y = estimate, 
+                  group = group, color = group)) +
+  geom_line() + 
+  geom_pointrange(aes(ymin = conf.low, ymax = conf.high))  +
+  geom_hline(aes(yintercept = 0 ), linetype = 2)+
+  xlab("number of anchor words") +
+  ylab("correlation estimate") +
+  theme_classic()
+```
+
+```
