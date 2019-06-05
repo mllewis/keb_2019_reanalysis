@@ -1,0 +1,174 @@
+---
+title: Taxonomic language distances
+author: Molly Lewis 
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    number_sections: no
+    toc: yes
+---
+  
+******
+
+```{r setup, include = F}
+
+# load packages
+library(rmarkdown)
+library(knitr)
+library(tidyverse)
+library(here)
+library(R.matlab)
+library(dendextend)
+library(ggdendro)
+library(heatmaply)
+
+opts_chunk$set(echo = T, message = F, warning = F, 
+               error = F, tidy = F, cache = F)
+```
+
+
+```{r, language_wiki_data}
+LANGUAGE_PATH_WIKI <- here("data/processed/animal_distances_wiki.csv")
+language_data_wiki <- read_csv(LANGUAGE_PATH_WIKI) %>%
+  spread(word2, language_similarity) %>%
+  select(-word1)
+
+all_corrs_mat_langs_wiki <- as.matrix(language_data_wiki)
+rownames(all_corrs_mat_langs_wiki) <- colnames(language_data_wiki)
+
+language_long_wiki <- all_corrs_mat_langs_wiki %>%
+  as.data.frame() %>%
+  rownames_to_column("animal1") %>%
+  gather("animal2", "similarity", -animal1) %>%
+  mutate(sim_type = "language_wiki")
+```
+
+```{r, language_google_data}
+LANGUAGE_PATH_GOOGLE <- here("data/processed/animal_distances_google.csv")
+language_data_google <- read_csv(LANGUAGE_PATH_GOOGLE) %>%
+  spread(word2, language_similarity) %>%
+  select(-word1)
+
+all_corrs_mat_lang_google <- as.matrix(language_data_google)
+rownames(all_corrs_mat_lang_google) <- colnames(language_data_google)
+
+language_long_google <- all_corrs_mat_lang_google %>%
+  as.data.frame() %>%
+  rownames_to_column("animal1") %>%
+  gather("animal2", "similarity", -animal1) %>%
+  mutate(sim_type = "language_google")
+
+```
+
+```{r taxonomic_data}
+OUTPATH <- here("data/processed/animal_distances_taxonomic.csv")
+TAXONOMIC_PATH <- here("data/raw/taxonomy_matrix.mat")
+taxonomic_data <- readMat(TAXONOMIC_PATH)[[2]]  
+
+LABELS <- c("shark", "swan", "flamingo", "pigeon", "crow", "elephant", 
+            "mammoth", "sloth", "beaver", "gorilla", "bat", "rhino", 
+            "zebra", "llama", "hippo", "killerwhale", "dolphin", "giraffe",
+            "sheep", "goat", "deer", "pig", "boar", "lion", "panther", "cheetah",
+            "skunk", "panda", "polarbear", "grizzly") %>% rev() # from SI fig s2
+
+colnames(taxonomic_data) <- LABELS
+rownames(taxonomic_data) <- LABELS
+
+taxonomic_long <- taxonomic_data %>%
+  as.data.frame() %>%
+  rownames_to_column("animal1") %>%
+  gather("animal2", "similarity", -animal1) %>%
+  mutate(sim_type = "taxonomy")
+```
+
+## Clusters
+### Wiki language
+```{r}
+heatmaply(all_corrs_mat_langs_wiki) 
+```
+
+### Google language
+```{r}
+heatmaply(all_corrs_mat_lang_google) 
+```
+
+### Taxonomy
+```{r}
+heatmaply(taxonomic_data) 
+```
+
+## Comparing clusters
+```{r}
+lang_clust_wiki <- all_corrs_mat_langs_wiki %>% 
+  dist() %>% 
+  hclust()
+
+lang_clust_google <- all_corrs_mat_lang_google %>% 
+  dist() %>% 
+  hclust() 
+
+taxo_clust <- taxonomic_data %>%
+    dist() %>% 
+    hclust()
+```
+
+### Dendrogram comparision
+#### Wiki. vs. google
+```{r}
+dendlist(as.dendrogram(lang_clust_wiki), as.dendrogram(lang_clust_google)) %>%
+  tanglegram(common_subtrees_color_branches = TRUE, highlight_branches_lwd = F)
+```
+
+#### Wiki vs. taxonomy
+```{r}
+dendlist(as.dendrogram(lang_clust_wiki), as.dendrogram(taxo_clust)) %>%
+  tanglegram(common_subtrees_color_branches = TRUE, highlight_branches_lwd = F)
+```
+
+#### Google vs. taxonomy
+```{r}
+dendlist(as.dendrogram(lang_clust_google), as.dendrogram(taxo_clust)) %>%
+  tanglegram(common_subtrees_color_branches = TRUE, highlight_branches_lwd = F)
+```
+
+### Pairwise correlations
+```{r}
+
+tidy_long <- bind_rows(taxonomic_long, language_long_wiki) %>%
+  bind_rows(language_long_google) %>%
+  filter(animal1 < animal2) %>%
+  spread(sim_type, similarity) 
+
+ggplot(tidy_long, aes(x = language_google, y = language_wiki )) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  ggtitle("Google vs. Wiki") +
+  theme_classic()
+
+cor.test(tidy_long$language_google,tidy_long$language_wiki)
+
+
+ggplot(tidy_long, aes(x = taxonomy, y = language_wiki )) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  ggtitle("Wiki vs. taxonomy") +
+  theme_classic()
+  
+cor.test(tidy_long$taxonomy,tidy_long$language_wiki)
+
+  
+ggplot(tidy_long, aes(x = taxonomy, y = language_google )) +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  ggtitle("Google vs. taxonomy") +
+  theme_classic()
+
+cor.test(tidy_long$taxonomy,tidy_long$language_google)
+```
+
+
+```{r}
+tidy_long %>%
+  DT::datatable()
+```

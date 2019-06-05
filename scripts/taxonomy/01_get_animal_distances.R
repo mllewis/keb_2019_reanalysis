@@ -3,24 +3,15 @@ library(tidyverse)
 library(data.table)
 library(here)
 
-WIKIPATH <- "/Users/mollylewis/Documents/research/Projects/1_in_progress/VOCAB_SEEDS/analyses/0_exploration/wiki.en.vec"
-OUTPATH <- here("data/processed/animal_distances_wiki.csv")
+VEC_PATH <- here('data/processed/cached_vectors_google.csv')
+OUTPATH <- here("data/processed/animal_distances_google.csv")
 TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv")
 
 human_data <- read_csv(TIDY_HUMAN_PATH)
 unique_animals <- unique(c(human_data$animal1, human_data$animal2))
 
-wmodel <- fread(
-  WIKIPATH,
-  header = FALSE,
-  skip = 1,
-  quote = "",
-  encoding = "UTF-8",
-  data.table = TRUE,
-  col.names = c("target_word",
-                unlist(lapply(2:301, function(x) paste0("V", x)))))
-
-target_vecs <- wmodel %>%
+all_vecs <- read_csv(VEC_PATH)
+target_vecs <- all_vecs %>%
   filter(target_word %in% unique_animals)
 
 word_word_dists <- coop::cosine(t(as.matrix(target_vecs[,-1]))) %>%
