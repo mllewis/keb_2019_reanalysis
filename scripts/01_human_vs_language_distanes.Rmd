@@ -125,6 +125,32 @@ lm(human_similarity_color~ language_similarity_simple_dist_color+participant_typ
   summary()
 
 
+lm(human_similarity_color~language_similarity_simple_dist_color +participant_type * 
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale)) %>%
+  summary()
+
+lm(human_similarity_color~language_similarity_simple_dist_color  +
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "blind")) %>%
+  summary()
+
+lm(human_similarity_color~language_similarity_simple_dist_color  +
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "sighted")) %>%
+  summary()
+
+
+
+
+lm(human_similarity_color~language_similarity_simple_dist_color  + language_similarity_simple_dist_shape +language_similarity_simple_dist_texture +
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "blind")) %>%
+  summary()
+
+
+lm(human_similarity_color~language_similarity_simple_dist_color  + language_similarity_simple_dist_shape +language_similarity_simple_dist_texture +
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "sighted")) %>%
+  summary()
+
+
+
 ```
 
 

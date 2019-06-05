@@ -18,41 +18,162 @@ library(rmarkdown)
 library(knitr)
 library(tidyverse)
 library(here)
+library(viridis)
 
 opts_chunk$set(echo = T, message = F, warning = F, 
                error = F, tidy = F, cache = F)
 ```
 
-
-
+# Taxonomic 
 ```{r}
-LANG_ANIMAL_DISTANCE_COLOR <- here("data/processed/animal_color_distances_language_wiki.csv")
-LANG_ANIMAL_DISTANCE_SHAPE<- here("data/processed/animal_shape_distances_language_wiki.csv")
-LANG_ANIMAL_DISTANCE_TEXTURE <- here("data/processed/animal_texture_distances_language_wiki.csv")
+WIKI_TAXONOMIC <- here("data/processed/animal_distances_wiki.csv")
+wiki_taxonomic <- read_csv(WIKI_TAXONOMIC)
 
-TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv") 
-language_data <- read_csv(LANG_ANIMAL_DISTANCE_COLOR) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_SHAPE), by  = c("animal1", "animal2")) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2")) %>%
-  select(-contains("PCA"))
- # mutate(language_similarity_simple_dist = -language_similarity_simple_dist)
+TAXONOMIC_PATH <- here("data/processed/animal_distances_taxonomic.csv")
+taxonomic_data <- read_csv(TAXONOMIC_PATH) %>%
+  rename(word1 = animal1,
+         word2 = animal2) %>%
+  select(-sim_type)
 
-human_data <- read_csv(TIDY_HUMAN_PATH) 
-full_sim_data <- full_join(language_data, human_data, by = c("animal1", "animal2"))   
 
-human_data_wide <- human_data %>%
-  unite("measure", c("participant_type", "similarity_type")) %>%
-  spread(measure, human_similarity)
+LABELS <- c("shark", "swan", "flamingo", "pigeon", "crow", "elephant", 
+            "mammoth", "sloth", "beaver", "gorilla", "bat", "rhino", 
+            "zebra", "llama", "hippo", "killerwhale", "dolphin", "giraffe",
+            "sheep", "goat", "deer", "pig", "boar", "lion", "panther", "cheetah",
+            "skunk", "panda", "polarbear", "grizzly") %>% rev() # from SI fig s2
 
-full_sim_data_wide <- full_join(language_data, human_data_wide, 
-                                by = c("animal1", "animal2"))  
+word_order <- data.frame(word1 = LABELS,
+                         word2 = LABELS,
+                         word_order1 = 1:length(LABELS),
+                         word_order2 = 1:length(LABELS))
+
+all_taxo <- full_join(wiki_taxonomic, taxonomic_data) %>%
+  mutate_if(is.numeric, scale) %>%
+  left_join(word_order %>% select(contains("1"))) %>%
+  left_join(word_order %>% select(contains("2"))) %>%
+  mutate(word1 = fct_relevel(word1, LABELS),
+         word2 = fct_relevel(word2, LABELS),
+         target_dist = case_when(word_order1 < word_order2 ~ language_similarity,
+                                 word_order1 > word_order2 ~ similarity,
+                                 TRUE ~ NA_real_))
+  
+ggplot(all_taxo, aes(x = word1, y = word2, fill = target_dist)) +
+  geom_tile() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_fill_viridis()
 
 ```
 
 # Color
+## Sighted
 ```{r}
-language_color <- full_sim_data_wide %>%
-  select(contains("animal"), language_similarity_simple_dist_color) %>%
-  spread("animal2", "language_similarity_simple_dist_color") 
+get_full_df <- function(df){
+  df %>%
+  rename(temp1 = animal1,
+         temp2 = animal2) %>%
+  mutate( animal1 = temp2,
+         animal2 = temp1) %>%
+  select(-contains("temp")) %>%
+  bind_rows(df) %>%
+  select(animal1, animal2, human_similarity)
+}
+
+
+
+LANG_ANIMAL_DISTANCE_COLOR <- here("data/processed/animal_color_distances_language_wiki.csv")
+color_language_distances <- read_csv(LANG_ANIMAL_DISTANCE_COLOR)%>%
+  filter(animal1 != animal2)
+
+
+TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv") 
+human_distances  <- read_csv(TIDY_HUMAN_PATH)
+
+color_sighted <- human_distances %>%
+  filter(participant_type == "sighted", 
+         similarity_type == "human_similarity_color") %>%
+  select(contains("animal"), human_similarity)
+
+color_sighted_full <- get_full_df(color_sighted)
+
+color_sighted_mat <- color_sighted_full %>%
+    spread(animal2, human_similarity) %>%
+    column_to_rownames("animal1") %>%
+    as.matrix()
+rownames(color_sighted_mat) <- colnames(color_sighted_mat)
+color_sighted_mat <- color_sighted_mat %>% 
+  dist() %>% 
+  hclust()
+
+label_in_order <- as.dendrogram(color_sighted_mat) %>% labels()
+labels2 <- c("giraffe", "cheetah", "lion", "zebra", "swan", "polarbear", "sheep", "goat", "shark", "killerwhale", "dolphin", "pigeon", "flamingo", "panda", "panther", "crow", "bat", "gorilla", "deer", "elephant", "pig", "rhino", "hippo", "beaver", "llama", "skunk", "grizzly", "sloth", "boar", "mammoth")
+animal_order <- data.frame(animal1 = label_in_order,
+                           animal2 = label_in_order, 
+                           word_order1 = 1:length(label_in_order),
+                           word_order2 = 1:length(label_in_order))
+
+
+all_color_sighted <- full_join(color_sighted_full, color_language_distances) %>%
+ # mutate_if(is.numeric, scale) %>%
+  left_join(animal_order %>% select(contains("1"))) %>%
+  left_join(animal_order %>% select(contains("2"))) %>%
+  mutate(animal1 = fct_relevel(animal1, label_in_order),
+         animal2 = fct_relevel(animal2, label_in_order),
+         triangle = case_when(word_order1 < word_order2 ~ "top",
+                                 word_order1 > word_order2 ~ "bottom",
+                                 TRUE ~ NA_character_),
+         target_dist = case_when(triangle == "top" ~ language_similarity_simple_dist_color,
+                                 triangle == "bottom" ~ human_similarity,
+                                 TRUE ~ NA_real_)) %>%
+  group_by(triangle) %>%
+ mutate(target_dist = scale(target_dist))
+
+ggplot(all_color_sighted, aes(x = animal1, y = animal2, fill = target_dist)) +
+  geom_tile() +
+  scale_fill_viridis() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## Blind
+```{r}
+color_blind <- human_distances %>%
+  filter(participant_type == "blind", 
+         similarity_type == "human_similarity_color") %>%
+  select(contains("animal"), human_similarity)
+
+color_blind_full <- get_full_df(color_blind)
+
+color_blind_full_mat <- color_blind_full %>%
+    spread(animal2, human_similarity) %>%
+    column_to_rownames("animal1") %>%
+    as.matrix()
+
+rownames(color_blind_full_mat) <- colnames(color_blind_full_mat)
+color_blind_full_mat <- color_blind_full_mat %>% 
+  dist() %>% 
+  hclust()
+
+label_in_order <- as.dendrogram(color_blind_full_mat) %>% labels()
+animal_order <- data.frame(animal1 = labels2,
+                           animal2 = labels2, 
+                           word_order1 = 1:length(label_in_order),
+                           word_order2 = 1:length(label_in_order))
+
+
+all_color_blind <- full_join(color_blind_full, color_language_distances) %>%
+  mutate_if(is.numeric, scale) %>%
+  left_join(animal_order %>% select(contains("1"))) %>%
+  left_join(animal_order %>% select(contains("2"))) %>%
+  mutate(animal1 = fct_relevel(animal1, label_in_order),
+         animal2 = fct_relevel(animal2, label_in_order),
+         target_dist = case_when(word_order1 < word_order2 ~ language_similarity_simple_dist_color,
+                                 word_order1 > word_order2 ~ human_similarity,
+                                 TRUE ~ NA_real_))
+
+ggplot(all_color_blind, aes(x = animal1, y = animal2, fill = target_dist)) +
+  geom_tile() +
+  scale_fill_viridis() +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```

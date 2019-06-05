@@ -3,8 +3,9 @@ library(tidyverse)
 library(data.table)
 library(here)
 
-VEC_PATH <- here('data/processed/cached_vectors_google.csv')
-OUTPATH <- here("data/processed/animal_distances_google.csv")
+VEC_PATH <- here('data/processed/cached_vectors_wiki.csv')
+OUTPATH <- here("data/processed/animal_distances_wiki.csv")
+
 TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv")
 
 human_data <- read_csv(TIDY_HUMAN_PATH)

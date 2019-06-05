@@ -576,6 +576,160 @@ ggplot(corr_df, aes(v1, fct_rev(v2), fill = estimate_color)) +
 ## Residual standard error: 0.9718 on 866 degrees of freedom
 ## Multiple R-squared:  0.05891,    Adjusted R-squared:  0.05565 
 ## F-statistic: 18.07 on 3 and 866 DF,  p-value: 2.217e-11</code></pre>
+<pre class="r"><code>lm(human_similarity_color~language_similarity_simple_dist_color +participant_type * 
+    taxo_similarity  ,  data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, scale)) %&gt;%
+  summary()</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = human_similarity_color ~ language_similarity_simple_dist_color + 
+##     participant_type * taxo_similarity, data = full_sim_data_wide2 %&gt;% 
+##     mutate_if(is.numeric, scale))
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.1870 -0.6741 -0.2608  0.3347  4.2302 
+## 
+## Coefficients:
+##                                         Estimate Std. Error t value
+## (Intercept)                              0.18756    0.04643   4.040
+## language_similarity_simple_dist_color   -0.10725    0.03285  -3.265
+## participant_typesighted                 -0.37512    0.06566  -5.713
+## taxo_similarity                         -0.19933    0.04645  -4.291
+## participant_typesighted:taxo_similarity  0.17677    0.06569   2.691
+##                                         Pr(&gt;|t|)    
+## (Intercept)                             5.82e-05 ***
+## language_similarity_simple_dist_color    0.00114 ** 
+## participant_typesighted                 1.52e-08 ***
+## taxo_similarity                         1.98e-05 ***
+## participant_typesighted:taxo_similarity  0.00727 ** 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.9683 on 865 degrees of freedom
+## Multiple R-squared:  0.06672,    Adjusted R-squared:  0.06241 
+## F-statistic: 15.46 on 4 and 865 DF,  p-value: 3.194e-12</code></pre>
+<pre class="r"><code>lm(human_similarity_color~language_similarity_simple_dist_color  +
+    taxo_similarity  ,  data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, scale) %&gt;% filter(participant_type == &quot;blind&quot;)) %&gt;%
+  summary()</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = human_similarity_color ~ language_similarity_simple_dist_color + 
+##     taxo_similarity, data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, 
+##     scale) %&gt;% filter(participant_type == &quot;blind&quot;))
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -1.19043 -0.48458 -0.06184  0.37166  3.15547 
+## 
+## Coefficients:
+##                                       Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)                            0.18756    0.03199   5.864 8.99e-09
+## language_similarity_simple_dist_color -0.12045    0.03200  -3.764 0.000191
+## taxo_similarity                       -0.19940    0.03200  -6.230 1.11e-09
+##                                          
+## (Intercept)                           ***
+## language_similarity_simple_dist_color ***
+## taxo_similarity                       ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.6671 on 432 degrees of freedom
+## Multiple R-squared:  0.1088, Adjusted R-squared:  0.1047 
+## F-statistic: 26.38 on 2 and 432 DF,  p-value: 1.558e-11</code></pre>
+<pre class="r"><code>lm(human_similarity_color~language_similarity_simple_dist_color  +
+    taxo_similarity  ,  data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, scale) %&gt;% filter(participant_type == &quot;sighted&quot;)) %&gt;%
+  summary()</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = human_similarity_color ~ language_similarity_simple_dist_color + 
+##     taxo_similarity, data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, 
+##     scale) %&gt;% filter(participant_type == &quot;sighted&quot;))
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.0470 -0.7732 -0.4904  0.1773  4.2224 
+## 
+## Coefficients:
+##                                       Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept)                           -0.18756    0.05737  -3.269  0.00117
+## language_similarity_simple_dist_color -0.09404    0.05741  -1.638  0.10212
+## taxo_similarity                       -0.02250    0.05741  -0.392  0.69534
+##                                         
+## (Intercept)                           **
+## language_similarity_simple_dist_color   
+## taxo_similarity                         
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 1.197 on 432 degrees of freedom
+## Multiple R-squared:  0.00651,    Adjusted R-squared:  0.001911 
+## F-statistic: 1.415 on 2 and 432 DF,  p-value: 0.2439</code></pre>
+<pre class="r"><code>lm(human_similarity_color~language_similarity_simple_dist_color  + language_similarity_simple_dist_shape +language_similarity_simple_dist_texture +
+    taxo_similarity  ,  data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, scale) %&gt;% filter(participant_type == &quot;blind&quot;)) %&gt;%
+  summary()</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = human_similarity_color ~ language_similarity_simple_dist_color + 
+##     language_similarity_simple_dist_shape + language_similarity_simple_dist_texture + 
+##     taxo_similarity, data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, 
+##     scale) %&gt;% filter(participant_type == &quot;blind&quot;))
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -1.25077 -0.47007 -0.07745  0.37848  2.97932 
+## 
+## Coefficients:
+##                                         Estimate Std. Error t value
+## (Intercept)                              0.18756    0.03089   6.071
+## language_similarity_simple_dist_color   -0.11402    0.03093  -3.686
+## language_similarity_simple_dist_shape   -0.20898    0.04293  -4.868
+## language_similarity_simple_dist_texture  0.04550    0.04228   1.076
+## taxo_similarity                         -0.16451    0.03165  -5.198
+##                                         Pr(&gt;|t|)    
+## (Intercept)                             2.79e-09 ***
+## language_similarity_simple_dist_color   0.000257 ***
+## language_similarity_simple_dist_shape   1.59e-06 ***
+## language_similarity_simple_dist_texture 0.282481    
+## taxo_similarity                         3.11e-07 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 0.6443 on 430 degrees of freedom
+## Multiple R-squared:  0.1725, Adjusted R-squared:  0.1649 
+## F-statistic: 22.42 on 4 and 430 DF,  p-value: &lt; 2.2e-16</code></pre>
+<pre class="r"><code>lm(human_similarity_color~language_similarity_simple_dist_color  + language_similarity_simple_dist_shape +language_similarity_simple_dist_texture +
+    taxo_similarity  ,  data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, scale) %&gt;% filter(participant_type == &quot;sighted&quot;)) %&gt;%
+  summary()</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = human_similarity_color ~ language_similarity_simple_dist_color + 
+##     language_similarity_simple_dist_shape + language_similarity_simple_dist_texture + 
+##     taxo_similarity, data = full_sim_data_wide2 %&gt;% mutate_if(is.numeric, 
+##     scale) %&gt;% filter(participant_type == &quot;sighted&quot;))
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -1.1917 -0.7497 -0.5078  0.2066  4.3739 
+## 
+## Coefficients:
+##                                          Estimate Std. Error t value
+## (Intercept)                             -0.187560   0.057330  -3.272
+## language_similarity_simple_dist_color   -0.091176   0.057403  -1.588
+## language_similarity_simple_dist_shape   -0.075872   0.079673  -0.952
+## language_similarity_simple_dist_texture -0.025238   0.078473  -0.322
+## taxo_similarity                         -0.008953   0.058731  -0.152
+##                                         Pr(&gt;|t|)   
+## (Intercept)                              0.00116 **
+## language_similarity_simple_dist_color    0.11295   
+## language_similarity_simple_dist_shape    0.34148   
+## language_similarity_simple_dist_texture  0.74791   
+## taxo_similarity                          0.87891   
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 1.196 on 430 degrees of freedom
+## Multiple R-squared:  0.01264,    Adjusted R-squared:  0.003459 
+## F-statistic: 1.377 on 4 and 430 DF,  p-value: 0.2411</code></pre>
 </div>
 <div id="google-news" class="section level1">
 <h1>Google News</h1>
