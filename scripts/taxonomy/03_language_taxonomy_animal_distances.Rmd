@@ -116,7 +116,8 @@ taxo_clust <- taxonomic_data %>%
 ### Dendrogram comparision
 #### Wiki. vs. google
 ```{r}
-dendlist(as.dendrogram(lang_clust_wiki), as.dendrogram(lang_clust_google)) %>%
+dendlist(as.dendrogram(lang_clust_wiki), 
+         as.dendrogram(lang_clust_google)) %>%
   tanglegram(common_subtrees_color_branches = TRUE, highlight_branches_lwd = F)
 ```
 

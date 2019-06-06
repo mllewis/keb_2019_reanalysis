@@ -228,9 +228,39 @@ ggplot(corr_df, aes(v1, fct_rev(v2), fill = estimate_color)) +
 
 ```{r}
 
-lm(human_similarity_color~ language_similarity_simple_dist_color+participant_type + 
-    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale)) %>%
+lm(human_similarity_color~ language_similarity_simple_dist_color*participant_type+participant_type * 
+    taxo_sim
+   ilarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale)) %>%
   summary()
+
+# color
+lm(human_similarity_skin~ language_similarity_simple_dist_color+language_similarity_simple_dist_shape + language_similarity_simple_dist_texture +
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "blind")) %>%
+  summary()
+
+lm(human_similarity_color~ language_similarity_simple_dist_color+
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "sighted")) %>%
+  summary()
+
+# shape
+lm(human_similarity_shape ~ language_similarity_simple_dist_shape+
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "blind")) %>%
+  summary()
+
+lm(human_similarity_shape~ language_similarity_simple_dist_shape+
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "sighted")) %>%
+  summary()
+
+
+# texture
+lm(human_similarity_skin ~ language_similarity_simple_dist_texture+
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "blind")) %>%
+  summary()
+
+lm(human_similarity_skin~ language_similarity_simple_dist_texture+
+    taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "sighted")) %>%
+  summary()
+
 
 ```
 
