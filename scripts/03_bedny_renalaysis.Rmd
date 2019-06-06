@@ -53,12 +53,14 @@ long_word_word_dists <- read_csv(LANGUAGE_DISTANCES)
 ```
 
 
-```{r}
+## all words
+```{r, fig.height = 3.5}
 all_data <- mean_ratings %>%
   left_join(long_word_word_dists)
 
 ggplot(all_data, aes(x = language_similarity, y = similarity))+
   geom_point() + 
+  #geom_text(aes(label = word1)) +
   ylab("human similarity")+
   geom_smooth(method = "lm") +
   facet_grid(~group_type) + 
@@ -69,15 +71,45 @@ ggplot(all_data, aes(x = language_similarity, y = similarity))+
 all_data %>%
   group_by(group_type)%>%
   nest() %>%
-  mutate(temp = map(data, ~tidy(cor.test(.$similarity, .$language_similarity)))) %>%
+  mutate(temp = map(data, ~tidy(cor.test(.$similarity, .$language_similarity,  method = "spearman")))) %>%
   select(-data) %>%
   unnest()
 ```
 
-```{r, include = F}
-lm(similarity ~ language_similarity* group_type, data = all_data %>% filter(group_type != "AMT")) %>%
-  summary()
 
+```{r}
+cb_s <- all_data %>% 
+  filter(group_type != "AMT") %>%
+  select(-language_similarity) %>%
+  spread(group_type, similarity)
+
+ggplot(cb_s, aes(x = CB, y = S))+
+  ggtitle("Sighted vs. Blind") +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  theme_classic()
+cor.test(cb_s$S, cb_s$CB)
+```
+
+
+## excluding "blink"
+```{r, fig.height = 3.5}
+ggplot(all_data %>% filter(word1 != "blink", word2 != "blink"), 
+       aes(x = language_similarity, y = similarity))+
+  geom_point() + 
+  #geom_text(aes(label = word1)) +
+  ylab("human similarity")+
+  geom_smooth(method = "lm") +
+  facet_grid(~group_type) + 
+  theme_classic()
+
+all_data %>%
+  filter(word1 != "blink", word1 != "blink") %>%
+  group_by(group_type)%>%
+  nest() %>%
+  mutate(temp = map(data, ~tidy(cor.test(.$similarity, .$language_similarity, method = "spearman")))) %>%
+  select(-data) %>%
+  unnest()
 ```
 
 ITEMS: 
