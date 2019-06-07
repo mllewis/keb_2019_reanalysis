@@ -147,7 +147,7 @@ ggplot(tidy_long, aes(x = language_google, y = language_wiki )) +
   ggtitle("Google vs. Wiki") +
   theme_classic()
 
-cor.test(tidy_long$language_google,tidy_long$language_wiki)
+cor.test(tidy_long$language_google,tidy_long$language_wiki, method = "spearman")
 
 
 ggplot(tidy_long, aes(x = taxonomy, y = language_wiki )) +
@@ -156,7 +156,7 @@ ggplot(tidy_long, aes(x = taxonomy, y = language_wiki )) +
   ggtitle("Wiki vs. taxonomy") +
   theme_classic()
   
-cor.test(tidy_long$taxonomy,tidy_long$language_wiki)
+cor.test(tidy_long$taxonomy,tidy_long$language_wiki, method = "spearman")
 
   
 ggplot(tidy_long, aes(x = taxonomy, y = language_google )) +
@@ -165,7 +165,7 @@ ggplot(tidy_long, aes(x = taxonomy, y = language_google )) +
   ggtitle("Google vs. taxonomy") +
   theme_classic()
 
-cor.test(tidy_long$taxonomy,tidy_long$language_google)
+cor.test(tidy_long$taxonomy,tidy_long$language_google, method= "spearman")
 ```
 
 

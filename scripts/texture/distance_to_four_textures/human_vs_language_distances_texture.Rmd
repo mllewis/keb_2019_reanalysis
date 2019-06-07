@@ -110,6 +110,33 @@ ggplot(corrs2, aes(x = jitter(set_id), y = estimate,
   theme_classic()
 ```
 
+```{r}
+language_correct <- lang_raw_comparison_all %>%
+  distinct(set_id, animal, texture, language_similarity) %>%
+  group_by(animal, set_id) %>%
+  filter(language_similarity == max(language_similarity)) %>%
+  select(-contains("similarity")) %>%
+  rename(language_texture = texture)
+
+human_correct <- lang_raw_comparison_all %>%
+  group_by(group, animal) %>%
+  filter(similarity == max(similarity)) %>%
+  select(-contains("similarity"), -correct, -set_id) %>%
+  slice(1)  %>% # get rid of one case where there's a tie (go with Kim et al. judgement) 
+  spread(group, texture) %>%
+  rename(CB_texture = CB, S_texture = S)
+
+full_join(language_correct, human_correct) %>%
+  mutate(CB_correct = CB_texture == language_texture,
+         S_correct = S_texture == language_texture) %>%
+  group_by(set_id) %>%
+  summarize(prop_CB_correct = mean(CB_correct),
+            prop_S_correct = mean(S_correct)) %>%
+  kable()
+  
+```
+
+
 #### correct only
 ```{r}
 correct_human_data <- human_data %>%
@@ -208,6 +235,7 @@ corrs <- diff_comparison_both %>%
   select(-data) %>%
   unnest() 
 ```
+
 
 ```{r}
 ggplot(corrs, aes(x = jitter(set_id), y = estimate, 

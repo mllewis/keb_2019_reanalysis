@@ -18,6 +18,8 @@ library(rmarkdown)
 library(knitr)
 library(tidyverse)
 library(here)
+library(broom)
+library(psych)
 
 opts_chunk$set(echo = T, message = F, warning = F, 
                error = F, tidy = F, cache = F)
@@ -55,9 +57,8 @@ LANG_ANIMAL_DISTANCE_TEXTURE <- here("data/processed/animal_texture_distances_la
 TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv") 
 language_data <- read_csv(LANG_ANIMAL_DISTANCE_COLOR) %>%
   left_join(read_csv(LANG_ANIMAL_DISTANCE_SHAPE), by  = c("animal1", "animal2")) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2")) %>%
-  select(-contains("PCA"))
- # mutate(language_similarity_simple_dist = -language_similarity_simple_dist)
+  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2"))  %>%
+  mutate_if(is.numeric, ~-.x )
 
 human_data <- read_csv(TIDY_HUMAN_PATH) 
 full_sim_data <- full_join(language_data, human_data, by = c("animal1", "animal2"))   
@@ -67,12 +68,7 @@ human_data_wide <- human_data %>%
   spread(measure, human_similarity)
 
 full_sim_data_wide <- full_join(language_data, human_data_wide, 
-                                by = c("animal1", "animal2"))  %>% full_join(taxonomic_long) %>%
-  filter(animal1 < animal2)
-
-full_sim_data_wide2 <-  full_join(language_data, human_data,
-                                  by = c("animal1", "animal2"))    %>%
-    spread(similarity_type, human_similarity) %>%
+                                by = c("animal1", "animal2"))  %>%
   full_join(taxonomic_long) %>%
   filter(animal1 < animal2)
 ```
@@ -83,13 +79,15 @@ plot_data <- full_sim_data_wide %>%
   select_if(is.numeric) 
 
 long_corr <- cor(plot_data, 
-                 use = "pairwise.complete.obs") %>%
+                 use = "pairwise.complete.obs", 
+                 method = "spearman") %>%
   as.data.frame() %>%
   rownames_to_column("v2") %>%
   gather("v1", "estimate", -v2)
 
 long_p <- corrplot::cor.mtest(plot_data, 
-                              use = "pairwise.complete.obs")$p %>%
+                              use = "pairwise.complete.obs", 
+                              method = "spearman")$p %>%
   as.data.frame(row.names = names(plot_data)) %>%
   do(setNames(.,names(plot_data))) %>%
   rownames_to_column("v2") %>%
@@ -120,6 +118,13 @@ ggplot(corr_df, aes(v1, fct_rev(v2), fill = estimate_color)) +
 
 Regressions showing that both taxonomic and language similarity predict human similarity (similiar pattern for other dimensions).
 ```{r}
+
+full_sim_data_wide2 <-  full_join(language_data, human_data,
+                                  by = c("animal1", "animal2"))    %>%
+    spread(similarity_type, human_similarity) %>%
+    full_join(taxonomic_long) %>%
+    filter(animal1 < animal2)
+
 lm(human_similarity_color~ language_similarity_simple_dist_color+  
     taxo_similarity  ,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "blind")) %>%
   summary()
@@ -127,6 +132,126 @@ lm(human_similarity_color~ language_similarity_simple_dist_color+
 lm(human_similarity_color~ language_similarity_simple_dist_color+
     taxo_similarity,  data = full_sim_data_wide2 %>% mutate_if(is.numeric, scale) %>% filter(participant_type == "sighted")) %>%
   summary()
+```
+
+```{r}
+color_cors <- full_sim_data_wide2 %>%
+  group_by(participant_type) %>%
+  nest() %>%
+  mutate(temp = map(data, ~ tidy(cor.test(.$language_similarity_simple_dist_color,
+                                          .$human_similarity_color, method = "spearman"))),
+         n = map(data, nrow),
+         dimension = "Color") %>%
+  select(-data) %>%
+  unnest() 
+
+texture_cors <- full_sim_data_wide2 %>%
+  group_by(participant_type) %>%
+  nest() %>%
+  mutate(temp = map(data, ~ tidy(cor.test(.$language_similarity_simple_dist_texture,
+                                          .$human_similarity_skin, method = "spearman"))),
+         n = map(data, nrow),
+         dimension = "Skin Texture") %>%
+  select(-data) %>%
+  unnest() 
+
+
+shape_cors <- full_sim_data_wide2 %>%
+  group_by(participant_type) %>%
+  nest() %>%
+  mutate(temp = map(data, ~ tidy(cor.test(.$language_similarity_simple_dist_shape,
+                                          .$human_similarity_shape, method = "spearman"))),
+         n = map(data, nrow),
+         dimension = "Shape") %>%
+  select(-data) %>%
+  unnest()
+```
+
+
+```{r taxonomic_data}
+TAXONOMIC_PATH <- here("data/raw/taxonomy_matrix.mat")
+taxonomic_data <- R.matlab::readMat(TAXONOMIC_PATH)[[2]]  
+
+LABELS <- c("shark", "swan", "flamingo", "pigeon", "crow", "elephant", 
+            "mammoth", "sloth", "beaver", "gorilla", "bat", "rhino", 
+            "zebra", "llama", "hippo", "killerwhale", "dolphin", "giraffe",
+            "sheep", "goat", "deer", "pig", "boar", "lion", "panther", "cheetah",
+            "skunk", "panda", "polarbear", "grizzly") %>% rev() # from SI fig s2
+
+colnames(taxonomic_data) <- LABELS
+rownames(taxonomic_data) <- LABELS
+
+taxonomic_long <- taxonomic_data %>%
+  as.data.frame() %>%
+  rownames_to_column("animal1") %>%
+  gather("animal2", "similarity", -animal1) %>%
+  mutate(sim_type = "taxonomic_similarity")
+
+LANGUAGE_PATH_WIKI <- here("data/processed/animal_distances_wiki.csv")
+language_data_wiki <- read_csv(LANGUAGE_PATH_WIKI) %>%
+  spread(word2, language_similarity) %>%
+  select(-word1)
+
+all_corrs_mat_langs_wiki <- as.matrix(language_data_wiki)
+rownames(all_corrs_mat_langs_wiki) <- colnames(language_data_wiki)
+
+language_long_wiki <- all_corrs_mat_langs_wiki %>%
+  as.data.frame() %>%
+  rownames_to_column("animal1") %>%
+  gather("animal2", "similarity", -animal1)  %>%
+  mutate(sim_type = "lang_wiki_similarity")
+
+taxo_corr <- bind_rows(taxonomic_long, language_long_wiki) %>%
+  filter(animal1 < animal2) %>%
+  spread(sim_type, similarity)  %>%
+  mutate(participant_type = "Evolutionary\nDistance") %>%
+  group_by(participant_type) %>%
+  nest() %>%
+  mutate(temp = map(data, ~ tidy(cor.test(.$lang_wiki_similarity,
+                                          -.$taxonomic_similarity, method = "spearman"))),
+         n = map(data, nrow),
+         dimension = "Taxonomy")  %>%
+  select(-data) %>%
+  unnest()
+```
+
+```{r}
+cor_df <- color_cors %>%
+  bind_rows(texture_cors) %>%
+  bind_rows(shape_cors) %>%
+  bind_rows(taxo_corr) %>%
+  select(-method, -alternative, -statistic) %>%
+  mutate(se = 1/sqrt(n-3),
+         estimate_se_l = estimate - se,
+         estimate_se_h = estimate + se,
+         dimension = fct_relevel(dimension, "Shape", "Skin Texture"),
+         participant_type = str_to_title(participant_type)) %>%
+  rowwise() %>%
+  mutate(estimate_ci_low = r.con(estimate,n)[1],
+         estimate_ci_high =  r.con(estimate,n)[2],
+         sig = case_when(p.value < .01 ~ "**",
+                         p.value < .05 ~ "*",
+                         TRUE ~ ""))
+
+cor_df
+  
+# https://en.wikipedia.org/wiki/Fisher_transformation
+# https://onlinelibrary-wiley-com.proxy.uchicago.edu/doi/pdf/10.1002/9781118445112.stat02802
+#https://pdfs.semanticscholar.org/c3e1/095209d3f72ff66e07b8f3b152fab099edea.pdf
+
+kable(cor_df)
+
+ggplot(cor_df, aes(x = fct_rev(participant_type), y = estimate, fill = participant_type)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  facet_grid(~dimension, drop = T, scales="free_x",space = "free_x") +
+  ylab("Fisher's \u0396-transformed \u03C1") +
+  xlab("Participant Group") +
+  ylim(0, .45) +
+  geom_text(aes(y = estimate + .08, label = sig), size = 5) +
+  geom_linerange(aes(ymin = estimate_se_l, ymax = estimate_se_h)) +
+  theme_classic() +
+  scale_fill_manual(values = c("blue", "yellow", "red")) +
+  theme(legend.position = "none")
 ```
 
 
@@ -139,9 +264,7 @@ LANG_ANIMAL_DISTANCE_TEXTURE <- here("data/processed/animal_texture_distances_la
 TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv") 
 language_data <- read_csv(LANG_ANIMAL_DISTANCE_COLOR) %>%
   left_join(read_csv(LANG_ANIMAL_DISTANCE_SHAPE), by  = c("animal1", "animal2")) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2")) %>%
-  select(-contains("PCA"))
- # mutate(language_similarity_simple_dist = -language_similarity_simple_dist)
+  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2"))
 
 human_data <- read_csv(TIDY_HUMAN_PATH) 
 full_sim_data <- full_join(language_data, human_data, by = c("animal1", "animal2"))   
@@ -150,13 +273,8 @@ human_data_wide <- human_data %>%
   unite("measure", c("participant_type", "similarity_type")) %>%
   spread(measure, human_similarity)
 full_sim_data_wide <- full_join(language_data, human_data_wide, 
-                                by = c("animal1", "animal2"))   %>%full_join(taxonomic_long)  %>%
-  filter(animal1 < animal2)
-
-full_sim_data_wide2 <-  full_join(language_data, human_data,
-                                  by = c("animal1", "animal2"))    %>%
-    spread(similarity_type, human_similarity) %>% 
-  full_join(taxonomic_long) %>%
+                                by = c("animal1", "animal2"))%>%
+  full_join(taxonomic_long)  %>%
   filter(animal1 < animal2)
 ```
 
@@ -166,18 +284,19 @@ plot_data <- full_sim_data_wide %>%
   select_if(is.numeric) 
 
 long_corr <- cor(plot_data, 
-                 use = "pairwise.complete.obs") %>%
+                 use = "pairwise.complete.obs", 
+                 method = "spearman") %>%
   as.data.frame() %>%
   rownames_to_column("v2") %>%
   gather("v1", "estimate", -v2)
 
 long_p <- corrplot::cor.mtest(plot_data, 
-                              use = "pairwise.complete.obs")$p %>%
+                              use = "pairwise.complete.obs", 
+                              method = "spearman")$p %>%
   as.data.frame(row.names = names(plot_data)) %>%
   do(setNames(.,names(plot_data))) %>%
   rownames_to_column("v2") %>%
   gather("v1", "p", -v2)
-
 corr_df <- full_join(long_corr, long_p) %>%
   mutate(estimate_char = case_when(v1 == v2 ~ "", 
                                    TRUE ~ as.character(round(estimate,2))),
