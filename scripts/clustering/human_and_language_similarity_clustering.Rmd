@@ -48,7 +48,7 @@ convert_similarity_to_matrix <- function(wide_data) {
   m
 }
 
-convert_similarity_to_distance <- function(wide_data, col_name,reverse_dist=T) {
+convert_similarity_to_distance <- function(wide_data, col_name,reverse_dist=T, human_data=T) {
   #convert human similarity values based on a similarity column name
   #extract subset of wide human data
   temp <- as.data.frame(wide_data) %>%
@@ -58,8 +58,14 @@ convert_similarity_to_distance <- function(wide_data, col_name,reverse_dist=T) {
   row.names(temp) <- temp$animal1
   temp <- temp %>%
     select(-animal1)
-  #convert to symmetric matrix
-  temp <- convert_similarity_to_matrix(temp)
+  if (human_data) {
+    #convert to symmetric matrix
+    temp <- convert_similarity_to_matrix(temp)
+  } else {
+    #convert to matrix
+    temp <- as.matrix(temp)
+  }
+  
   if (reverse_dist) {
     #convert from similarity to "distance"
     temp <- 1- temp
@@ -118,7 +124,7 @@ ggdendro::ggdendrogram(blind_human_color_clust, rotate = T) +
 
 ```{r}
 language_color_clust <- language_data %>%
-  convert_similarity_to_distance("language_similarity_simple_dist_color", reverse_dist=F) %>%
+  convert_similarity_to_distance("language_similarity_simple_dist_color", reverse_dist=F, human_data=F) %>%
   as.dist() %>%
   hclust()
 ggdendro::ggdendrogram(language_color_clust, rotate = T) +
@@ -159,15 +165,12 @@ Bk_plot(as.dendrogram(blind_human_color_clust), as.dendrogram(sighted_human_colo
 
 ####Various other metrics of similarity
 
-Choosing a smaller cluster number and a cluster number with high similarity based on the Bk plot, so "double-dipping".
+Choosing a smaller cluster number (k=5).
 
 ```{r}
 #five clusters
 print("FIVE CLUSTERS")
 adjustedRand(cutree(blind_human_color_clust, k=5), cutree(sighted_human_color_clust, k=5))
-#20 clusters
-print("20 CLUSTERS")
-adjustedRand(cutree(blind_human_color_clust, k=20), cutree(sighted_human_color_clust, k=20))
 ```
 
 ###SIGHTED TO LANGUAGE COMPARISON
@@ -198,15 +201,12 @@ Bk_plot(as.dendrogram(sighted_human_color_clust), as.dendrogram(language_color_c
 
 ####Various other metrics of similarity
 
-Choosing a smaller cluster number and a cluster number with high similarity based on the Bk plot, so "double-dipping".
+Choosing a smaller cluster number.
 
 ```{r}
 #five clusters
 print("FIVE CLUSTERS")
 adjustedRand(cutree(sighted_human_color_clust, k=5), cutree(language_color_clust, k=5))
-#20 clusters
-print("20 CLUSTERS")
-adjustedRand(cutree(sighted_human_color_clust, k=20), cutree(language_color_clust, k=20))
 ```
 
 
@@ -238,15 +238,12 @@ Bk_plot(as.dendrogram(blind_human_color_clust), as.dendrogram(language_color_clu
 
 ####Various other metrics of similarity
 
-Choosing a smaller cluster number and a cluster number with high similarity based on the Bk plot, so "double-dipping".
+Choosing a smaller cluster number (k=5).
 
 ```{r}
 #five clusters
 print("FIVE CLUSTERS")
 adjustedRand(cutree(blind_human_color_clust, k=5), cutree(language_color_clust, k=5))
-#20 clusters
-print("21 CLUSTERS")
-adjustedRand(cutree(blind_human_color_clust, k=21), cutree(language_color_clust, k=21))
 ```
 
 ##SHAPE
@@ -279,7 +276,7 @@ ggdendro::ggdendrogram(blind_human_shape_clust, rotate = T) +
 
 ```{r}
 language_shape_clust <- language_data %>%
-  convert_similarity_to_distance("language_similarity_simple_dist_shape", reverse_dist=F) %>%
+  convert_similarity_to_distance("language_similarity_simple_dist_shape", reverse_dist=F, human_data=F) %>%
   as.dist() %>%
   hclust()
 ggdendro::ggdendrogram(language_shape_clust, rotate = T) +
@@ -397,7 +394,7 @@ ggdendro::ggdendrogram(blind_human_skin_clust, rotate = T) +
 
 ```{r}
 language_skin_clust <- language_data %>%
-  convert_similarity_to_distance("language_similarity_simple_dist_skin", reverse_dist=F) %>%
+  convert_similarity_to_distance("language_similarity_simple_dist_texture", reverse_dist=F, human_data=F) %>%
   as.dist() %>%
   hclust()
 ggdendro::ggdendrogram(language_skin_clust, rotate = T) +

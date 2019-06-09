@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/502369/f4c0ded4a8ea4dbea8791519b13635c6
+bundleId: https://api.rpubs.com/api/v1/document/502369/f4c0ded4a8ea4dbea8791519b13635c6
+url: http://rpubs.com/mzettersten/502369
+when: 1559771228.19592
