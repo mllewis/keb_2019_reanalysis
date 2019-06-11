@@ -102,6 +102,8 @@ taxo_corr <- bind_rows(taxonomic_long, language_long_wiki) %>%
   unnest() 
 
 
+
+
 cor_df <- color_cors %>%
   bind_rows(texture_cors) %>%
   bind_rows(shape_cors) %>%
@@ -116,6 +118,17 @@ cor_df <- color_cors %>%
   mutate(sig = case_when(p.value < .01 ~ "**",
                          p.value < .05 ~ "*",
                          TRUE ~ ""))
+
+# https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0121945
+library(cocor)
+bscorr<-cor(human_data_wide$blind_human_similarity_color,human_data_wide$sighted_human_similarity_color)
+r.jk <-  0.149 # Correlation (language, blind)
+r.jh <- 0.0855  # Correlation (language, sighted)
+r.kh <- bscorr # Correlation (intelligence, shoe size)
+n <- 435 # Size of the group
+cocor.dep.groups.overlap(r.jk, r.jh, r.kh, n, 
+                         var.labels=c("language", "blind", "sighted"))
+
 
 fig_a <- ggplot(cor_df, aes(x = fct_rev(participant_type), y = estimate, fill = participant_type)) +
   geom_bar(stat = "identity", position = "dodge") +

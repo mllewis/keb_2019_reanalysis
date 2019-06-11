@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  11 JUN 2019 14:37
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  11 JUN 2019 14:53
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -386,7 +386,7 @@ Here is how much of TeX's memory you used:
  10096 multiletter control sequences out of 15000+600000
  9018 words of font info for 32 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 36i,7n,39p,1455b,355s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 36i,7n,39p,1459b,355s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb><
@@ -394,7 +394,7 @@ Here is how much of TeX's memory you used:
 sr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr
 /local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/
 local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on keb_2019_renalaysis.pdf (3 pages, 152920 bytes).
+Output written on keb_2019_renalaysis.pdf (3 pages, 152627 bytes).
 PDF statistics:
  96 PDF objects out of 1000 (max. 8388607)
  73 compressed objects within 1 object stream
