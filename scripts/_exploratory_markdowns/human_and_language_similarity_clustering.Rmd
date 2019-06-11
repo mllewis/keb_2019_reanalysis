@@ -1,0 +1,483 @@
+---
+title: "Cluster Analysis Language And Human Similarity Data"
+author: Martin Zettersten 
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    number_sections: no
+    toc: yes
+---
+
+```{r setup, include = F}
+
+# load packages
+library(rmarkdown)
+library(knitr)
+library(tidyverse)
+library(here)
+library(Matrix)
+library(dendextend)
+library(ggdendro)
+library(clues)
+
+opts_chunk$set(echo = T, message = F, warning = F, 
+               error = F, tidy = F, cache = F)
+```
+
+## Pre-processing functions
+
+I will make these a bit prettier, but basically they just convert the existing data frames with distance/ similarity info into "distance" matrices.
+
+``` {r}
+#### useful functions ####
+convert_similarity_to_matrix <- function(wide_data) {
+  #work into symmetric matrix (messy)
+  #convert to matrix
+  m <- as.matrix(wide_data)
+  #add extra row
+  m <- rbind(m,c(rep(NA,ncol(m)-1),1.0))
+  row.names(m)[nrow(m)] <- colnames(m)[ncol(m)]
+  #add extra column
+  m <- cbind(c(1.0,rep(NA,nrow(m)-1)),m)
+  colnames(m)[1] <- row.names(m)[1]
+  #convert into symmetric matrix (using forceSymmetric in Matrix package)
+  diag(m) <- 1
+  m <- forceSymmetric(m)
+  #return
+  m
+}
+
+convert_similarity_to_distance <- function(wide_data, col_name,reverse_dist=T, human_data=T) {
+  #convert human similarity values based on a similarity column name
+  #extract subset of wide human data
+  temp <- as.data.frame(wide_data) %>%
+    select(animal1,animal2, !!col_name) %>%
+    spread(animal2,!!col_name,fill="", convert=T)
+  #change animal1 column to row name
+  row.names(temp) <- temp$animal1
+  temp <- temp %>%
+    select(-animal1)
+  if (human_data) {
+    #convert to symmetric matrix
+    temp <- convert_similarity_to_matrix(temp)
+  } else {
+    #convert to matrix
+    temp <- as.matrix(temp)
+  }
+  
+  if (reverse_dist) {
+    #convert from similarity to "distance"
+    temp <- 1- temp
+  }
+  #return
+  temp
+}
+```
+
+##LOAD DATA
+
+```{r}
+LANG_ANIMAL_DISTANCE_COLOR <- here("data/processed/animal_color_distances_language_wiki.csv")
+LANG_ANIMAL_DISTANCE_COLOR
+LANG_ANIMAL_DISTANCE_SHAPE<- here("data/processed/animal_shape_distances_language_wiki.csv")
+LANG_ANIMAL_DISTANCE_TEXTURE <- here("data/processed/animal_texture_distances_language_wiki.csv")
+TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv")
+
+language_data <- read_csv(LANG_ANIMAL_DISTANCE_COLOR) %>%
+  left_join(read_csv(LANG_ANIMAL_DISTANCE_SHAPE), by  = c("animal1", "animal2")) %>%
+  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2")) %>%
+  select(-contains("PCA"))
+human_data <- read_csv(TIDY_HUMAN_PATH)
+human_data_wide <- human_data %>%
+  unite("measure", c("participant_type", "similarity_type")) %>%
+  spread(measure, human_similarity)
+```
+
+##COLOR
+
+###SIMPLE DENDOGRAMS
+
+####SIGHTED HUMAN DENDOGRAM
+
+```{r}
+sighted_human_color_clust <- human_data_wide %>%
+  convert_similarity_to_distance("sighted_human_similarity_color") %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(sighted_human_color_clust, rotate = T) +
+  ggtitle("Sighted Human Similarity Color")
+```
+
+####BLIND HUMAN DENDOGRAM
+
+```{r}
+blind_human_color_clust <- human_data_wide %>%
+  convert_similarity_to_distance("blind_human_similarity_color") %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(blind_human_color_clust, rotate = T) +
+  ggtitle("Blind Human Similarity Color")
+```
+
+####LANGUAGE DENDOGRAM
+
+```{r}
+language_color_clust <- language_data %>%
+  convert_similarity_to_distance("language_similarity_simple_dist_color", reverse_dist=F, human_data=F) %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(language_color_clust, rotate = T) +
+  ggtitle("Language Distances Color")
+```
+
+###BLIND TO SIGHTED HUMAN COMPARISON
+
+####DEFAULT TANGLEGRAM
+
+Lower entanglement is better (0 is perfect alignment).
+
+```{r}
+dends <- dendlist(as.dendrogram(blind_human_color_clust), as.dendrogram(sighted_human_color_clust))
+x <- tanglegram(dends, common_subtrees_color_branches = TRUE, highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+dends <- dendlist(as.dendrogram(blind_human_color_clust), as.dendrogram(sighted_human_color_clust))
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+
+####Bk plot
+
+See https://cran.r-project.org/web/packages/dendextend/vignettes/introduction.html#the-fowlkes-mallows-index-and-the-bk-plot for details.
+
+The FM-Index is a measure of similarity between two clusterings (higher means greater similarity). The Bk plot shows the FM-INdex for various values of k, where k is the number of clusters. The dashed black line shows the *expected value assuming no connection between the clusterings*, the red line shows the *critical significance level*. **Dotted points above indicate significantly similar clusterings, i.e. better than one would expect from simply reshuffling labels**.
+
+```{r}
+Bk_plot(as.dendrogram(blind_human_color_clust), as.dendrogram(sighted_human_color_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a smaller cluster number (k=5).
+
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(blind_human_color_clust, k=5), cutree(sighted_human_color_clust, k=5))
+```
+
+###SIGHTED TO LANGUAGE COMPARISON
+
+####DEFAULT TANGLEGRAM
+
+Lower entanglement is better (0 is perfect alignment).
+
+```{r}
+dends <- dendlist(as.dendrogram(sighted_human_color_clust), as.dendrogram(language_color_clust))
+x <- tanglegram(dends, common_subtrees_color_branches = TRUE, highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####Bk plot
+
+```{r}
+Bk_plot(as.dendrogram(sighted_human_color_clust), as.dendrogram(language_color_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a smaller cluster number.
+
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(sighted_human_color_clust, k=5), cutree(language_color_clust, k=5))
+```
+
+
+###BLIND TO LANGUAGE COMPARISON
+
+####DEFAULT TANGLEGRAM
+
+Lower entanglement is better (0 is perfect alignment).
+
+```{r}
+dends <- dendlist(as.dendrogram(blind_human_color_clust), as.dendrogram(language_color_clust))
+x <- tanglegram(dends, common_subtrees_color_branches = TRUE, highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####Bk plot
+
+```{r}
+Bk_plot(as.dendrogram(blind_human_color_clust), as.dendrogram(language_color_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a smaller cluster number (k=5).
+
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(blind_human_color_clust, k=5), cutree(language_color_clust, k=5))
+```
+
+##SHAPE
+
+###SIMPLE DENDOGRAMS
+
+####SIGHTED HUMAN DENDOGRAM
+
+```{r}
+sighted_human_shape_clust <- human_data_wide %>%
+  convert_similarity_to_distance("sighted_human_similarity_shape") %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(sighted_human_shape_clust, rotate = T) +
+  ggtitle("Sighted Human Similarity shape")
+```
+
+####BLIND HUMAN DENDOGRAM
+
+```{r}
+blind_human_shape_clust <- human_data_wide %>%
+  convert_similarity_to_distance("blind_human_similarity_shape") %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(blind_human_shape_clust, rotate = T) +
+  ggtitle("Blind Human Similarity shape")
+```
+
+####LANGUAGE DENDOGRAM
+
+```{r}
+language_shape_clust <- language_data %>%
+  convert_similarity_to_distance("language_similarity_simple_dist_shape", reverse_dist=F, human_data=F) %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(language_shape_clust, rotate = T) +
+  ggtitle("Language Distances shape")
+```
+
+###BLIND TO SIGHTED HUMAN COMPARISON
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+dends <- dendlist(as.dendrogram(blind_human_shape_clust), as.dendrogram(sighted_human_shape_clust))
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####Bk plot
+
+```{r}
+Bk_plot(as.dendrogram(blind_human_shape_clust), as.dendrogram(sighted_human_shape_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a small cluster number (k=5).
+
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(blind_human_shape_clust, k=5), cutree(sighted_human_shape_clust, k=5))
+```
+
+###SIGHTED TO LANGUAGE COMPARISON
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+dends <- dendlist(as.dendrogram(sighted_human_shape_clust), as.dendrogram(language_shape_clust))
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####Bk plot
+
+```{r}
+Bk_plot(as.dendrogram(sighted_human_shape_clust), as.dendrogram(language_shape_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a small cluster number (k=5).
+
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(sighted_human_shape_clust, k=5), cutree(language_shape_clust, k=5))
+```
+
+
+###BLIND TO LANGUAGE COMPARISON
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+dends <- dendlist(as.dendrogram(blind_human_shape_clust), as.dendrogram(language_shape_clust))
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####Bk plot
+
+```{r}
+Bk_plot(as.dendrogram(blind_human_shape_clust), as.dendrogram(language_shape_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a small cluster number (k=5)
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(blind_human_shape_clust, k=5), cutree(language_shape_clust, k=5))
+```
+
+##TEXTURE
+
+###SIMPLE DENDOGRAMS
+
+####SIGHTED HUMAN DENDOGRAM
+
+```{r}
+sighted_human_skin_clust <- human_data_wide %>%
+  convert_similarity_to_distance("sighted_human_similarity_skin") %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(sighted_human_skin_clust, rotate = T) +
+  ggtitle("Sighted Human Similarity skin")
+```
+
+####BLIND HUMAN DENDOGRAM
+
+```{r}
+blind_human_skin_clust <- human_data_wide %>%
+  convert_similarity_to_distance("blind_human_similarity_skin") %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(blind_human_skin_clust, rotate = T) +
+  ggtitle("Blind Human Similarity skin")
+```
+
+####LANGUAGE DENDOGRAM
+
+```{r}
+language_skin_clust <- language_data %>%
+  convert_similarity_to_distance("language_similarity_simple_dist_texture", reverse_dist=F, human_data=F) %>%
+  as.dist() %>%
+  hclust()
+ggdendro::ggdendrogram(language_skin_clust, rotate = T) +
+  ggtitle("Language Distances skin")
+```
+
+###BLIND TO SIGHTED HUMAN COMPARISON
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+dends <- dendlist(as.dendrogram(blind_human_skin_clust), as.dendrogram(sighted_human_skin_clust))
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####Bk plot
+
+```{r}
+Bk_plot(as.dendrogram(blind_human_skin_clust), as.dendrogram(sighted_human_skin_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a small cluster number (k=5).
+
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(blind_human_skin_clust, k=5), cutree(sighted_human_skin_clust, k=5))
+```
+
+###SIGHTED TO LANGUAGE COMPARISON
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+dends <- dendlist(as.dendrogram(sighted_human_skin_clust), as.dendrogram(language_skin_clust))
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####Bk plot
+
+```{r}
+Bk_plot(as.dendrogram(sighted_human_skin_clust), as.dendrogram(language_skin_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a small cluster number (k=5).
+
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(sighted_human_skin_clust, k=5), cutree(language_skin_clust, k=5))
+```
+
+
+###BLIND TO LANGUAGE COMPARISON
+
+####TANGLEGRAM AFTER ROTATING TREES TO FIND MORE COMPARABLE SOLUTION
+```{r}
+dends <- dendlist(as.dendrogram(blind_human_skin_clust), as.dendrogram(language_skin_clust))
+x <- dends %>%
+  untangle(method = "step2side") %>% 
+  tanglegram( common_subtrees_color_branches = TRUE,highlight_branches_lwd = F) 
+paste("entanglement = ",round(entanglement(x), 2))
+```
+
+####Bk plot
+
+```{r}
+Bk_plot(as.dendrogram(blind_human_skin_clust), as.dendrogram(language_skin_clust), main="FM-Index for different numbers of clusters.\nDots closer to 1 indicate more similar clusterings.\nDots above red line are significant.")
+```
+
+####Various other metrics of similarity
+
+Choosing a small cluster number (k=5)
+```{r}
+#five clusters
+print("FIVE CLUSTERS")
+adjustedRand(cutree(blind_human_skin_clust, k=5), cutree(language_skin_clust, k=5))
+```

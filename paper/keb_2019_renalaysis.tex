@@ -12,7 +12,7 @@
 
 
 \begin{document}
-\title{\normalsize \vspace{-.5\baselineskip} \bf{Visual knowledge in the congenitally blind: Inference or language?} \vspace{-1.2\baselineskip}}
+\title{\normalsize \vspace{-.5\baselineskip} \bf{Visual knowledge in the congenitally blind: Inference or Distributional semantics?} \vspace{-1.2\baselineskip}}
 \author{\small  Molly Lewis, Martin Zettersten, and Gary Lupyan}
 \date{}
 \clearpage\maketitle
@@ -28,11 +28,19 @@ In a recent report, Kim, Elli, and Bedny (1) detailed congenitally blind individ
 
 We think the authors were premature to reject language as an important source of visual knowledge. We show that associative learning algorithms lacking inferential machinery can partially reproduce behaviors of sighted and blind people after being exposed to natural language. The algorithms learn word meanings by attempting to predict what words surround other words (2, 3). The resulting semantic representations show reasonably close correspondence to human judgments  (4, 5). By measuring vector distances between representations of animal words and target words used in (1; e.g., shark-skin vs. shark-feathers), we are able to subject these models to analogous tests performed by the human subjects. We find that semantic representations learned wholly from language correlate significantly with animal shape, and skin-texture (see Fig.\ 1a-b). Despite high name agreement, distributional semantics encode animal color much less than other information. Consistent with blind people relying on statistical patterns learned from language, color information conveyed by language statistics significantly predicts the responses of blind, but not of sighted participants. Even if participants’ performance were partially based on explicit inference, the question remains: how do blind participants learn the taxonomic relationships in the first place? We find that these too can be partially learned from language (Fig.\ 1c). 
 
-The idea that distributional semantics is a rich source of visual knowledge also helps to understand a related report by the authors (6) showing that blind people's semantic judgments of words like ``twinkle," ``flare," and ``sparkle" were closely aligned with sighted people’s judgments ($\rho$ = .90). The authors again rely on explicit inference to word meanings as an explanation, but here too we find that word meanings learned through distributional semantics (using models lacking inferential machinery) show correspondences with both sighted ($\rho$ =.59) and blind ($\rho$ = .63) people's semantic judgments. 
+The idea that distributional semantics are a rich source of visual knowledge also helps to understand a related report by the authors (6) showing that blind people's semantic judgments of words like ``twinkle," ``flare," and ``sparkle" were closely aligned with sighted people’s judgments ($\rho$ = .90). The authors again rely on explicit inference to word meanings as an explanation, but here too we find that word meanings learned through distributional semantics (using models lacking inferential machinery) show correspondences with both sighted ($\rho$ = .59) and blind ($\rho$ = .63) people's semantic judgments. 
 
 People, regardless of sight, doubtlessly use inferential reasoning to generate new knowledge. However, our results show embedded in the statistical structure of language is a surprisingly rich repository of visual knowledge.
 
-Supporting results are available at xxx.
+Supporting results are available at \url{http://rpubs.com/mll/504020}.
+\pagebreak
+
+\begin{figure}[h!]
+\centering
+     \includegraphics[width=7in]{figure_ppt3.pdf}
+      \caption{\footnotesize  A. Pairwise correlations (Fisher transformed as in 1) between language-derived animal similarities (cosine distances) and evolutionary distances (yellow), performance of sighted (red) and blind participants (blue). Human comparisions are shown separately for shape, skin texture, and color card-sorting tasks in (1). B. Language statistics classify animals as having scales, skin, fur, or feathers at levels well-above chance. Predictive accuracy is shown for ground truth (yellow) and performance of sighted (red) and blind participants (blue).  C. Relationships among animals computed entirely from language statistics show considerable overlap with relationships derived from shape-based categorization produced by sighted and blind participants. }
+\end{figure}
+
 
 
 \subsubsection*{References}
@@ -52,7 +60,7 @@ Supporting results are available at xxx.
 \noindent5. 	Gerz D, Vulić I, Hill F, Reichart R, Korhonen A (2016) Simverb-3500: A large-scale evaluation set of verb similarity.  {\it ArXiv Prepr ArXiv160800869}. Available at: \url{https://arxiv.org/abs/1608.00869} [Accessed April 4, 2017].
 \vspace{3mm}
 
-\noindent6. 	Bedny M, Koster-Hale J, Elli G, Yazzolino L, Saxe R (2019) There’s more to “sparkle” than meets the eye: Knowledge of vision and light verbs among congenitally blind and sighted individuals.  {\it Cognition} 189:105–115.
+\noindent6. 	Bedny M, Koster-Hale J, Elli G, Yazzolino L, Saxe R (2019) There’s more to ``sparkle'' than meets the eye: Knowledge of vision and light verbs among congenitally blind and sighted individuals.  {\it Cognition} 189:105–115.
 
 
 
