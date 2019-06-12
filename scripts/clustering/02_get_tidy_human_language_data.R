@@ -31,7 +31,7 @@ human_data_tidy <- human_data %>%
   mutate(knowledge_type = case_when(knowledge_type == "skin" ~ "texture", 
                                     TRUE ~ knowledge_type))
 
-all_data <- bind_rows(language_data, human_data) %>%
+all_data <- bind_rows(language_data, human_data_tidy) %>%
   select(knowledge_source, knowledge_type, animal1, animal2, similarity_value) %>%
   mutate(similarity_value = case_when(knowledge_source != "language" ~ 1 - similarity_value, 
                                       TRUE ~ similarity_value)) 

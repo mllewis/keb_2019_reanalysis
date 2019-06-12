@@ -29,7 +29,6 @@ library(R.matlab)
 library(heatmaply)
 
 
-
 opts_chunk$set(echo = F, message = F, warning = F, 
                error = F, cache = F, tidy = F, fig.height = 4.5)
 
@@ -606,7 +605,6 @@ texture_cors <- full_sim_data_wide2 %>%
   select(-data) %>%
   unnest() 
 
-
 shape_cors <- full_sim_data_wide2 %>%
   group_by(participant_type) %>%
   nest() %>%
@@ -656,7 +654,6 @@ taxo_corr <- bind_rows(taxonomic_long, language_long_wiki) %>%
   select(-data) %>%
   unnest() 
 
-
 cor_df <- color_cors %>%
   bind_rows(texture_cors) %>%
   bind_rows(shape_cors) %>%
@@ -671,7 +668,6 @@ cor_df <- color_cors %>%
   mutate(sig = case_when(p.value < .01 ~ "**",
                          p.value < .05 ~ "*",
                          TRUE ~ ""))
-
 
 ggplot(cor_df, aes(x = fct_rev(participant_type), y = estimate, fill = participant_type)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -707,9 +703,9 @@ ground_truth <- read_csv(TIDY_HUMAN_TEXTURE)  %>%
   rename(ground_truth_texture = texture) %>%
   select(-correct)
 
-language_data  <- read_csv(LANGUAGE_SIMILARITY) 
+language_data  <- read_csv(LANGUAGE_SIMILARITY)
 
-language_and_human_df<- left_join(human_data, language_data)
+language_and_human_df <- left_join(human_data, language_data)
 
 language_correct <- language_and_human_df %>%
   distinct(animal, texture, language_similarity) %>%
@@ -757,13 +753,11 @@ ggplot(accuracy_table, aes(x = group, y = estimate, fill = group)) +
   scale_y_continuous(
     expand = expand_scale(mult = c(0, 0.05))) +
   theme(legend.position = "none")
-
 ```
 
 
 # Bedny et al. (2019) Data
 ```{r}
-
 BEDNY_DATA <- here("data/raw/datalong_CBSAMT.csv")
 bedny_data <- read_csv(BEDNY_DATA)
 
@@ -783,14 +777,14 @@ sim_ratings <-bedny_data %>%
          group_type = fct_recode(group_type, "Sighted" = "S", "Blind" = "CB", "Turk" = "AMT"))
 ```
 
-We analyzed the 15 "light emission" verbs used by Bedny et al. (2019). We selected this set of items because they refer to a domain which blind participants have most limited direct perceptual access to. The 15 items are: `r  unique(c(sim_ratings$word1, sim_ratings$word2))`. We estimated the pairwise similarity of these words from distributional semantics (cosine distance) using a model trained on English Wikipedia (Bojanowski, et al. 2016), and then compared these distances to human similarity judgement. 
+We analyzed the 15 "light emission" verbs used by Bedny et al. (2019). We selected this set of items because they refer to a domain which blind participants have most limited direct perceptual access to. The 15 items are: `r  unique(c(sim_ratings$word1, sim_ratings$word2))`. We estimated the pairwise similarity of these words from distributional semantics (cosine distance) using a model trained on English Wikipedia (Bojanowski, et al. 2016), and then compared these distances to human similarity judgements. 
 
-Presented below are the correlations between human judgement (blind, sighted, and a sample from Mechanical Turk; from Bedny et al., 2019) and estimates from the language model. The red points indicate pairs that include the item "blink," which appears to be an outlier - presumably because blink also has a frequent sense that doesn't refer to light emission (i.e., a blinking eye). In the Main Text, we report correlation values with this item excluded; below are all correlation values with and without this item.
+Presented below are the correlations between human judgements (blind, sighted, and a sample from Mechanical Turk; from Bedny et al., 2019) and estimates from the language model. The red points indicate pairs that include the item "blink," which appears to be an outlier -- presumably because blink also has a frequent sense that doesn't refer to light emission (i.e., a blinking eye). In the Main Text, we report correlation values with this item excluded; below are all correlation values with and without this item.
 
 ```{r, fig.height = 3.5}
 mean_ratings <- sim_ratings %>%
   group_by(group_type, word1, word2) %>%
-  filter(!is.na(norm_similarity))%>%
+  filter(!is.na(norm_similarity)) %>%
   summarize(similarity = mean(norm_similarity)) 
 
 # get language distances
@@ -803,7 +797,6 @@ all_data <- mean_ratings %>%
 
 ggplot(all_data, aes(x = language_similarity, y = similarity))+
   geom_point(aes(color = is_blink)) + 
-  #geom_text(aes(label = word1)) +
   scale_color_manual(values = c("red", "black")) +
   xlab("Language Similarity (Wikipedia Corpus)") +
   ylab("Human Similarity")+
@@ -859,6 +852,6 @@ Bojanowski, P., Grave, E., Joulin, A., & Mikolov, T. (2016). Enriching word vect
 
 de Vries, A.  &  Ripley, B. D. (2016). ggdendro: Create Dendrograms and Tree Diagrams Using 'ggplot2'. R package version 0.1-20. https://CRAN.R-project.org/package=ggdendro
 
-Galili, T., (2015). dendextend: an R package for visualizing, adjusting, and comparing trees of hierarchical clustering. Bioinformatics. DOI: 10.1093/bioinformatics/btv428
+Galili, T. (2015). dendextend: an R package for visualizing, adjusting, and comparing trees of hierarchical clustering. Bioinformatics. DOI: 10.1093/bioinformatics/btv428
 
 Mikolov, T., Chen, K., Corrado, G., & Dean, J. (2013). Efficient estimation of word representations in vector space. _arXiv preprint arXiv:1301.3781_.
