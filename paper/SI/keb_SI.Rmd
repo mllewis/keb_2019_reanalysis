@@ -231,16 +231,17 @@ get_hclust <- function(current_sims){
   rownames(wide_sims_mat) <- colnames(wide_sims)
   
   wide_sims_mat %>%
-    dist()%>%
+    dist() %>%
     hclust()
 }
+
 TIDY_HUMAN_WIKI_DATA <- here("data/processed/tidy_human_wiki_language_data.csv")
 
 all_data <- read_csv(TIDY_HUMAN_WIKI_DATA)
 
 all_hclusts <- all_data %>%
   filter(!(knowledge_type %in% c("habitat", "food"))) %>%
-  group_by(knowledge_source, knowledge_type)%>%
+  group_by(knowledge_source, knowledge_type) %>%
   nest() %>%
   mutate(hclusts = map(data, get_hclust)) %>%
   select(-data)
@@ -852,12 +853,12 @@ Excluding "blink", the correlation between blind and sighted participants is $\r
 
 **References**
 
-Bedny M, Koster-Hale J, Elli G, Yazzolino L, Saxe R (2019) There’s more to “sparkle” than meets the eye: Knowledge of vision and light verbs among congenitally blind and sighted individuals.  _Cognition_ 189:105–115.
+Bedny M., Koster-Hale J., Elli G., Yazzolino L., Saxe R. (2019) There’s more to “sparkle” than meets the eye: Knowledge of vision and light verbs among congenitally blind and sighted individuals.  _Cognition_ 189:105–115.
 
 Bojanowski, P., Grave, E., Joulin, A., & Mikolov, T. (2016). Enriching word vectors with subword information. https://arxiv.org/abs/1607.04606
 
-de Vries, Andrie  &  Ripley, Brian D. (2016). ggdendro: Create Dendrograms and Tree Diagrams Using 'ggplot2'. R package version 0.1-20. https://CRAN.R-project.org/package=ggdendro
+de Vries, A.  &  Ripley, B. D. (2016). ggdendro: Create Dendrograms and Tree Diagrams Using 'ggplot2'. R package version 0.1-20. https://CRAN.R-project.org/package=ggdendro
 
-Galili, Tal (2015). dendextend: an R package for visualizing, adjusting, and comparing trees of hierarchical clustering. Bioinformatics. DOI: 10.1093/bioinformatics/btv428
+Galili, T., (2015). dendextend: an R package for visualizing, adjusting, and comparing trees of hierarchical clustering. Bioinformatics. DOI: 10.1093/bioinformatics/btv428
 
 Mikolov, T., Chen, K., Corrado, G., & Dean, J. (2013). Efficient estimation of word representations in vector space. _arXiv preprint arXiv:1301.3781_.

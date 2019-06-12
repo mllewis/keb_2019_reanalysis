@@ -2,22 +2,28 @@ library(tidyverse)
 library(here)
 
 LANG_ANIMAL_DISTANCE_COLOR <- here("data/processed/animal_color_distances_language_wiki.csv")
-LANG_ANIMAL_DISTANCE_SHAPE<- here("data/processed/animal_shape_distances_language_wiki.csv")
+LANG_ANIMAL_DISTANCE_SHAPE <- here("data/processed/animal_shape_distances_language_wiki.csv")
 LANG_ANIMAL_DISTANCE_TEXTURE <- here("data/processed/animal_texture_distances_language_wiki.csv")
 TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv")
 OUTFILE <- here("data/processed/tidy_human_wiki_language_data.csv")
 
 language_data <- read_csv(LANG_ANIMAL_DISTANCE_COLOR) %>%
   left_join(read_csv(LANG_ANIMAL_DISTANCE_SHAPE), by  = c("animal1", "animal2")) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2")) %>%
+  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE), by  = c("animal1", "animal2")) %>%
   select(-contains("PCA")) %>%
   gather("knowledge_type", "similarity_value", -animal1, -animal2) %>%
   rowwise() %>%
   mutate(knowledge_source = "language",
-         knowledge_type = str_split(knowledge_type, "dist_")[[1]][2])
+         knowledge_type = str_split(knowledge_type, "dist_")[[1]][2]) %>%
+  ungroup()%>%
+  mutate_if(is.character, as.factor)
 
-human_data <- read_csv(TIDY_HUMAN_PATH) %>%
-  rowwise()%>%
+human_data <- read_csv(TIDY_HUMAN_PATH)
+
+human_data_tidy <- human_data %>%
+  bind_rows(human_data %>% select(-animal1, -animal2) %>% 
+              mutate(animal1 = human_data$animal2, animal2 = human_data$animal1)) %>%
+  rowwise() %>%
   mutate(knowledge_type = str_split(similarity_type, "similarity_")[[1]][2]) %>%
   rename(knowledge_source = participant_type,
          similarity_value = human_similarity) %>%
@@ -27,8 +33,7 @@ human_data <- read_csv(TIDY_HUMAN_PATH) %>%
 
 all_data <- bind_rows(language_data, human_data) %>%
   select(knowledge_source, knowledge_type, animal1, animal2, similarity_value) %>%
-  mutate(similarity_value = case_when(knowledge_source == "human"~ 1- similarity_value, 
-                                      TRUE ~ similarity_value)) %>%
-  filter(animal2 > animal1)
+  mutate(similarity_value = case_when(knowledge_source != "language" ~ 1 - similarity_value, 
+                                      TRUE ~ similarity_value)) 
 
 write_csv(all_data, OUTFILE)
