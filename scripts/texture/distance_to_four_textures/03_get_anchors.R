@@ -1,4 +1,4 @@
-# get most frequently described texture
+# get anchors beyond four target words
 library(tidyverse)
 library(here)
 library(data.table)
