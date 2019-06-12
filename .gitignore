@@ -9,9 +9,12 @@ stimuli/*
 *.Rhistory
 *_cache/*
 *_files/*
-*resconnect/
+*rsconnect/*
 .Rproj.user/*
 *4-Word-Embedding/*
+*keb_SI_files/*
+*keb_SI_cache/*
+
 resources/*
 *.feather
 # LaTeX #
