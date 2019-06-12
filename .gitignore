@@ -1,0 +1,56 @@
+*auth.json
+**/production-results/*
+stimuli/*
+*.DS_Store
+*.dcf
+*.rdb
+*.rdx
+*.Rdata
+*.Rhistory
+*_cache/*
+*_files/*
+*resconnect/
+.Rproj.user/*
+*4-Word-Embedding/*
+resources/*
+*.feather
+# LaTeX #
+*.bet
+*.acn
+*.acr
+*.alg
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.fdb_latexmk
+*.glg
+*.glo
+*.gls
+*.idx
+*.ilg
+*.ind
+*.ist
+*.lof
+*.lot
+*.maf
+*.mtc
+*.mtc0
+*.nav
+*.nlo
+*.out
+*.pdfsync
+*.ps
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.xdy
+*.tdo
+.Rproj.user
+analyses/5_race/data/Race IAT.public.2002-2017.sav
+analyses/5_race/data/Race_IAT.public.2016.zip
+analyses/7_age_controls/by_participant_df.csv
+analyses/5_race/data/Race\ IAT.public.2016.sav
+analyses/5_race/data/Race\ IAT.public.2002-2017.sav
+analyses/5_race/data/Race\ IAT.public.2002-2017\ \(1\).zip
