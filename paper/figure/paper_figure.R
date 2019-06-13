@@ -1,4 +1,3 @@
-# get most frequently described colors
 library(tidyverse)
 library(here)
 library(knitr)
@@ -231,92 +230,26 @@ dev.off()
 
 ### DENDROGRAM ### 
 
-LANG_ANIMAL_DISTANCE_COLOR <- here("data/processed/animal_color_distances_language_wiki.csv")
-LANG_ANIMAL_DISTANCE_SHAPE<- here("data/processed/animal_shape_distances_language_wiki.csv")
-LANG_ANIMAL_DISTANCE_TEXTURE <- here("data/processed/animal_texture_distances_language_wiki.csv")
-TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv")
+TIDY_HUMAN_WIKI_DATA <- here("data/processed/tidy_human_wiki_language_data.csv")
 
-language_data <- read_csv(LANG_ANIMAL_DISTANCE_COLOR) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_SHAPE), by  = c("animal1", "animal2")) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2")) %>%
-  select(-contains("PCA"))
-human_data <- read_csv(TIDY_HUMAN_PATH)
-human_data_wide <- human_data %>%
-  unite("measure", c("participant_type", "similarity_type")) %>%
-  spread(measure, human_similarity)
+all_data <- read_csv(TIDY_HUMAN_WIKI_DATA)
 
-#rename human "skin" columns to texture
-colnames(human_data_wide)[colnames(human_data_wide)=="blind_human_similarity_skin"] <- "blind_human_similarity_texture"
-colnames(human_data_wide)[colnames(human_data_wide)=="sighted_human_similarity_skin"] <- "sighted_human_similarity_texture"
+all_hclusts <- all_data %>%
+  filter(!(knowledge_type %in% c("habitat", "food"))) %>%
+  group_by(knowledge_source, knowledge_type) %>%
+  nest() %>%
+  mutate(hclusts = map(data, get_hclust)) %>%
+  select(-data)
 
-####Compute clusters and organize into a list####
-convert_similarity_to_matrix <- function(wide_data) {
-  #work into symmetric matrix (messy)
-  #convert to matrix
-  m <- as.matrix(wide_data)
-  #add extra row
-  m <- rbind(m,c(rep(NA,ncol(m)-1),1.0))
-  row.names(m)[nrow(m)] <- colnames(m)[ncol(m)]
-  #add extra column
-  m <- cbind(c(1.0,rep(NA,nrow(m)-1)),m)
-  colnames(m)[1] <- row.names(m)[1]
-  #convert into symmetric matrix (using forceSymmetric in Matrix package)
-  diag(m) <- 1
-  m <- forceSymmetric(m)
-  #return
-  m
-}
-
-
-convert_similarity_to_distance <- function(wide_data, col_name,reverse_dist=T, human_data=T) {
-  #convert human similarity values based on a similarity column name
-  #extract subset of wide human data
-  temp <- as.data.frame(wide_data) %>%
-    select(animal1,animal2, !!col_name) %>%
-    spread(animal2,!!col_name,fill="", convert=T)
-  #change animal1 column to row name
-  row.names(temp) <- temp$animal1
-  temp <- temp %>%
-    select(-animal1)
-  if (human_data) {
-    #convert to symmetric matrix
-    temp <- convert_similarity_to_matrix(temp)
-  } else {
-    #convert to matrix
-    temp <- as.matrix(temp)
-  }
-  
-  if (reverse_dist) {
-    #convert from similarity to "distance"
-    temp <- 1- temp
-  }
-  #return
-  temp
-}
-
-cluster_list=list()
-data_sources=c("sighted","blind","language")
-knowledge_types=c("color","shape","texture")
-for (knowledge_type in knowledge_types) {
-  for (data_source in data_sources) {
-    if (data_source == "language") {
-      cluster_list[[knowledge_type]][[data_source]] <- language_data %>%
-        convert_similarity_to_distance(paste(data_source,"_similarity_simple_dist_",knowledge_type,sep=""), reverse_dist=F, human_data=F) %>%
-        as.dist() %>%
-        hclust()
-    } else {
-      cluster_list[[knowledge_type]][[data_source]] <- human_data_wide %>%
-        convert_similarity_to_distance(paste(data_source,"_human_similarity_",knowledge_type,sep="")) %>%
-        as.dist() %>%
-        hclust()
-    }
-  }
-}
+current_dends <- all_hclusts %>%
+  filter(knowledge_type == "shape",
+         knowledge_source %in% c("language", "blind")) %>%
+  mutate(dendros = map(hclusts, as.dendrogram)) %>%
+  pull(dendros)
 
 pdf("tanglegram_shape_blind.pdf", width= 5, height = 5)
 #layout(matrix(1:6, nrow=1, byrow=TRUE), widths= c(5, 3, 5, 5, 3, 5))
-fig1c_1 <- dendlist(as.dendrogram(cluster_list[["shape"]][["language"]]),
-                    as.dendrogram(cluster_list[["shape"]][["blind"]])) %>%
+fig1c_1 <- dendlist(current_dends[[1]], current_dends[[2]]) %>%
   untangle(method = "step2side") %>%
   tanglegram(axes=F, color_lines="grey",
              common_subtrees_color_lines = FALSE,
@@ -331,8 +264,14 @@ fig1c_1 <- dendlist(as.dendrogram(cluster_list[["shape"]][["language"]]),
 dev.off()
 
 pdf("tanglegram_shape_sighted.pdf", width= 5, height = 5)
-fig1c_2 <- dendlist(as.dendrogram(cluster_list[["shape"]][["language"]]),
-                    as.dendrogram(cluster_list[["shape"]][["sighted"]])) %>%
+
+current_dends <- all_hclusts %>%
+  filter(knowledge_type == "shape",
+         knowledge_source %in% c("language", "sighted")) %>%
+  mutate(dendros = map(hclusts, as.dendrogram)) %>%
+  pull(dendros)
+
+fig1c_2 <- dendlist(current_dends[[1]], current_dends[[2]]) %>%
   untangle(method = "step2side") %>%
   tanglegram(axes = F, color_lines="grey",
              common_subtrees_color_lines = FALSE,

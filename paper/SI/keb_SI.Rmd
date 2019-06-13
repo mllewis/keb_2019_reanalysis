@@ -229,6 +229,9 @@ get_hclust <- function(current_sims){
   wide_sims_mat <- as.matrix(wide_sims)
   rownames(wide_sims_mat) <- colnames(wide_sims)
   
+  #replace NA's with 0's along the diagonal
+  wide_sims_mat[is.na(wide_sims_mat)] <- 0
+  
   wide_sims_mat %>%
     dist() %>%
     hclust()
@@ -352,14 +355,14 @@ cluster_similarity_values <- read_csv(CLUSTER_PATH)
 #process into shorter dataframe
 cluster_similarity <- cluster_similarity_values %>%
   rowwise() %>% 
-  mutate(data_source = paste(sort(c(as.character(data_source_1), 
-                                    as.character(data_source_2))), collapse = "_")) %>%  
+  mutate(knowledge_source = paste(sort(c(as.character(knowledge_source_1), 
+                                    as.character(knowledge_source_2))), collapse = "_")) %>%  
   ungroup() %>%
-  group_by(knowledge_type,data_source) %>%
-  select(-data_source_1,-data_source_2) %>%
+  group_by(knowledge_type,knowledge_source) %>%
+  select(-knowledge_source_1,-knowledge_source_2) %>%
   summarise_all(min)
 
-ggplot(cluster_similarity, aes(data_source,entangle_step2side,fill=data_source))+
+ggplot(cluster_similarity, aes(knowledge_source,entangle_step2side,fill=knowledge_source))+
   geom_bar(stat="identity")+
   ylim(0,1)+
   facet_wrap(~knowledge_type)+
@@ -385,16 +388,16 @@ The plots depict the z-scored FM-Index for each pairwise comparison of the hiera
 
 ```{r, fig.height = 5, fig.width = 4}
 cluster_similarity_Z_FM <- cluster_similarity %>%
-  select(knowledge_type,data_source,Z_FM_5,Z_FM_10,Z_FM_15, Z_FM_20) %>%
+  select(knowledge_type,knowledge_source,Z_FM_5,Z_FM_10,Z_FM_15, Z_FM_20) %>%
   gather(cluster_num,Z_FM, Z_FM_5:Z_FM_20) %>%
   mutate(cluster_num=as.numeric(as.character(str_remove(cluster_num, "Z_FM_"))))
 
-ggplot(cluster_similarity_Z_FM, aes(x = data_source, y = Z_FM, fill = data_source)) +
+ggplot(cluster_similarity_Z_FM, aes(x = knowledge_source, y = Z_FM, fill = knowledge_source)) +
     geom_bar(stat="identity")+
     scale_x_discrete(name="",
                  limits=c("blind_sighted","language_sighted","blind_language"),
                labels=c("Blind \nto Sighted", "Language \nto Sighted","Language \nto Blind"))+
-    scale_y_continuous(limits=c(-1,16))+
+    scale_y_continuous(limits=c(-2,16))+
     geom_hline(yintercept=1.645, linetype="dashed")+
     scale_fill_brewer(palette="Set1")+
     ylab("FM Index (Z-score)")+
@@ -411,16 +414,16 @@ The plots depict the adjusted Rand index for each pairwise comparison of the hie
 
 ```{r, fig.height = 5, fig.width = 4}
 cluster_similarity_adjustedRand <- cluster_similarity %>%
-  select(knowledge_type,data_source,adjustedRand_5,adjustedRand_10,adjustedRand_15, adjustedRand_20) %>%
+  select(knowledge_type,knowledge_source,adjustedRand_5,adjustedRand_10,adjustedRand_15, adjustedRand_20) %>%
   gather(cluster_num,adjustedRand, adjustedRand_5:adjustedRand_20) %>%
   mutate(cluster_num=as.numeric(as.character(str_remove(cluster_num, "adjustedRand_"))))
 
-ggplot(cluster_similarity_adjustedRand, aes(x = data_source, y = adjustedRand, fill = data_source)) +
+ggplot(cluster_similarity_adjustedRand, aes(x = knowledge_source, y = adjustedRand, fill = knowledge_source)) +
     geom_bar(stat="identity")+
     scale_x_discrete(name="",
                  limits=c("blind_sighted","language_sighted","blind_language"),
                labels=c("Blind \nto Sighted", "Language \nto Sighted","Language \nto Blind"))+
-    scale_y_continuous(limits=c(-0.1,1))+
+    scale_y_continuous(limits=c(-0.2,1))+
     scale_fill_brewer(palette="Set1")+
     ylab("Adjusted Rand Index")+
     xlab("Clustering Comparison")+

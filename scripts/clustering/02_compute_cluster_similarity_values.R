@@ -1,108 +1,70 @@
 library(tidyverse)
 library(here)
-library(Matrix)
 library(dendextend)
 library(ggdendro)
 library(clues)
 library(gtools)
 
-#### useful functions ####
-convert_similarity_to_matrix <- function(wide_data) {
-  #work into symmetric matrix (messy)
-  #convert to matrix
-  m <- as.matrix(wide_data)
-  #add extra row
-  m <- rbind(m,c(rep(NA,ncol(m)-1),1.0))
-  row.names(m)[nrow(m)] <- colnames(m)[ncol(m)]
-  #add extra column
-  m <- cbind(c(1.0,rep(NA,nrow(m)-1)),m)
-  colnames(m)[1] <- row.names(m)[1]
-  #convert into symmetric matrix (using forceSymmetric in Matrix package)
-  diag(m) <- 1
-  m <- forceSymmetric(m)
-  #return
-  m
-}
+OUTFILE <- here("data/processed/cluster_similarity_values.csv")
 
-convert_similarity_to_distance <- function(wide_data, col_name,reverse_dist=T, human_data=T) {
-  #convert human similarity values based on a similarity column name
-  #extract subset of wide human data
-  temp <- as.data.frame(wide_data) %>%
-    select(animal1,animal2, !!col_name) %>%
-    spread(animal2,!!col_name,fill="", convert=T)
-  #change animal1 column to row name
-  row.names(temp) <- temp$animal1
-  temp <- temp %>%
-    select(-animal1)
-  if (human_data) {
-    #convert to symmetric matrix
-    temp <- convert_similarity_to_matrix(temp)
-  } else {
-    #convert to matrix
-    temp <- as.matrix(temp)
-  }
+####function for computing hierarchical clusters
+get_hclust <- function(current_sims){
+  wide_sims <- current_sims %>%
+    select(animal1, animal2, similarity_value) %>%
+    spread(animal1, similarity_value) %>%
+    select(-animal2)
   
-  if (reverse_dist) {
-    #convert from similarity to "distance"
-    temp <- 1- temp
-  }
-  #return
-  temp
+  wide_sims_mat <- as.matrix(wide_sims)
+  rownames(wide_sims_mat) <- colnames(wide_sims)
+  
+  #replace NA's with 0's along the diagonal
+  wide_sims_mat[is.na(wide_sims_mat)] <- 0
+  
+  wide_sims_mat %>%
+    dist() %>%
+    hclust()
 }
 
 ##load data
-LANG_ANIMAL_DISTANCE_COLOR <- here("data/processed/animal_color_distances_language_wiki.csv")
-LANG_ANIMAL_DISTANCE_COLOR
-LANG_ANIMAL_DISTANCE_SHAPE<- here("data/processed/animal_shape_distances_language_wiki.csv")
-LANG_ANIMAL_DISTANCE_TEXTURE <- here("data/processed/animal_texture_distances_language_wiki.csv")
-TIDY_HUMAN_PATH <- here("data/processed/tidy_human_data.csv")
+TIDY_HUMAN_WIKI_DATA <- here("data/processed/tidy_human_wiki_language_data.csv")
 
-language_data <- read_csv(LANG_ANIMAL_DISTANCE_COLOR) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_SHAPE), by  = c("animal1", "animal2")) %>%
-  left_join(read_csv(LANG_ANIMAL_DISTANCE_TEXTURE),by  = c("animal1", "animal2")) %>%
-  select(-contains("PCA"))
-human_data <- read_csv(TIDY_HUMAN_PATH)
-human_data_wide <- human_data %>%
-  unite("measure", c("participant_type", "similarity_type")) %>%
-  spread(measure, human_similarity)
+all_data <- read_csv(TIDY_HUMAN_WIKI_DATA)
 
-#rename human "skin" columns to texture
-colnames(human_data_wide)[colnames(human_data_wide)=="blind_human_similarity_skin"] <- "blind_human_similarity_texture"
-colnames(human_data_wide)[colnames(human_data_wide)=="sighted_human_similarity_skin"] <- "sighted_human_similarity_texture"
+#compute all clusters
+all_hclusts <- all_data %>%
+  filter(!(knowledge_type %in% c("habitat", "food"))) %>%
+  group_by(knowledge_source, knowledge_type) %>%
+  nest() %>%
+  mutate(hclusts = map(data, get_hclust)) %>%
+  select(-data)
 
 #set seed for random untangle() procedure
 set.seed(100)
 
-##compute list of clusters
-cluster_list=list()
-data_sources=c("sighted","blind","language")
+#data and knowledge sources to iterate over
+knowledge_sources=c("sighted","blind","language")
 knowledge_types=c("color","shape","texture")
-for (knowledge_type in knowledge_types) {
-  for (data_source in data_sources) {
-    if (data_source == "language") {
-      cluster_list[[knowledge_type]][[data_source]] <- language_data %>%
-        convert_similarity_to_distance(paste(data_source,"_similarity_simple_dist_",knowledge_type,sep=""), reverse_dist=F, human_data=F) %>%
-        as.dist() %>%
-        hclust()
-    } else {
-      cluster_list[[knowledge_type]][[data_source]] <- human_data_wide %>%
-        convert_similarity_to_distance(paste(data_source,"_human_similarity_",knowledge_type,sep="")) %>%
-        as.dist() %>%
-        hclust()
-    }
-  }
-}
 
 #create data frame containing entanglement, FM values, and other indices of cluster similarity
 cluster_similarity_values <- data.frame()
-for (knowledge_type in knowledge_types) {
-  for (i in 1:length(permutations(3,2,data_sources)[,1])) {
+for (kt in knowledge_types) {
+  for (i in 1:length(permutations(3,2,knowledge_sources)[,1])) {
+    temp_1=list()
+    temp_2=list()
     print(i)
     #cluster
-    data_source_1 <- permutations(3,2,data_sources)[i,1]
-    data_source_2 <- permutations(3,2,data_sources)[i,2]
-    hc_1 <- cluster_list[[knowledge_type]][[data_source_1]]
-    hc_2 <- cluster_list[[knowledge_type]][[data_source_2]]
+    knowledge_source_1 <- permutations(3,2,knowledge_sources)[i,1]
+    knowledge_source_2 <- permutations(3,2,knowledge_sources)[i,2]
+    temp_1 <- all_hclusts %>%
+      filter(knowledge_type == kt,
+             knowledge_source == knowledge_source_1) %>%
+      pull(hclusts)
+    hc_1 <- temp_1[[1]]
+    temp_2 <- all_hclusts %>%
+      filter(knowledge_type == kt,
+             knowledge_source == knowledge_source_2) %>%
+      pull(hclusts)
+    hc_2 <- temp_2[[1]]
     #entanglement
     dends <- dendlist(as.dendrogram(hc_1),as.dendrogram(hc_2))
     x_step2side <- dends %>%
@@ -144,9 +106,9 @@ for (knowledge_type in knowledge_types) {
     
     
     temp <- data.frame(
-      data_source_1=data_source_1,
-      data_source_2=data_source_2,
-      knowledge_type=knowledge_type,
+      knowledge_source_1=knowledge_source_1,
+      knowledge_source_2=knowledge_source_2,
+      knowledge_type=kt,
       entangle_original=round(entanglement(dends),3),
       entangle_step2side=round(entanglement(x_step2side),3),
       entangle_random=round(entanglement(x_random),3),
@@ -164,4 +126,4 @@ for (knowledge_type in knowledge_types) {
 }
 
 #write data frame to file 
-write.csv(cluster_similarity_values, "cluster_similarity_values.csv",row.names=F)
+write_csv(cluster_similarity_values, OUTFILE)
