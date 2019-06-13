@@ -186,7 +186,8 @@ Notably, in a regression predicting human similarity with both taxonomic and lin
 ### Color
 ```{r}
 lm_df <- full_sim_data_wide2 %>%
-  left_join(taxonomic_long %>% rename("taxonomic_sim" = similarity ) %>% select(-sim_type)) %>%
+  left_join(taxonomic_long %>% 
+              rename("taxonomic_sim" = similarity) %>% select(-sim_type)) %>%
   mutate(taxonomic_sim = 1-taxonomic_sim)
 
 lm(human_similarity_color~ language_similarity_simple_dist_color+  
@@ -209,11 +210,11 @@ lm(human_similarity_color~ language_similarity_simple_dist_texture +
 
 ### Shape
 ```{r}
-lm(human_similarity_color~ language_similarity_simple_dist_shape +  
+lm(human_similarity_color ~ language_similarity_simple_dist_shape +  
     taxonomic_sim  + participant_type,  
    data = lm_df %>% mutate_if(is.numeric, scale)) %>%
   summary() %>%
-  tidy()%>%
+  tidy( )%>%
   kable(digits=5)
 ```
 
@@ -403,7 +404,8 @@ ggplot(cluster_similarity_Z_FM, aes(x = knowledge_source, y = Z_FM, fill = knowl
     ylab("FM Index (Z-score)")+
     xlab("Clustering Comparison")+
     facet_grid(cluster_num ~ knowledge_type)+
-    theme(legend.position = "none", axis.text.x  = element_text(angle=90, vjust=0.5,size=8))
+    theme(legend.position = "none", 
+          axis.text.x  = element_text(angle=90, vjust=0.5,size=8))
 ```
 
 ### Adjusted Rand Index
@@ -414,20 +416,21 @@ The plots depict the adjusted Rand index for each pairwise comparison of the hie
 
 ```{r, fig.height = 5, fig.width = 4}
 cluster_similarity_adjustedRand <- cluster_similarity %>%
-  select(knowledge_type,knowledge_source,adjustedRand_5,adjustedRand_10,adjustedRand_15, adjustedRand_20) %>%
+  select(knowledge_type, knowledge_source,
+         adjustedRand_5, adjustedRand_10, adjustedRand_15, adjustedRand_20) %>%
   gather(cluster_num,adjustedRand, adjustedRand_5:adjustedRand_20) %>%
-  mutate(cluster_num=as.numeric(as.character(str_remove(cluster_num, "adjustedRand_"))))
+  mutate(cluster_num = as.numeric(as.character(str_remove(cluster_num, "adjustedRand_"))))
 
 ggplot(cluster_similarity_adjustedRand, aes(x = knowledge_source, y = adjustedRand, fill = knowledge_source)) +
-    geom_bar(stat="identity")+
+    geom_bar(stat ="identity")+
     scale_x_discrete(name="",
-                 limits=c("blind_sighted","language_sighted","blind_language"),
-               labels=c("Blind \nto Sighted", "Language \nto Sighted","Language \nto Blind"))+
+                 limits = c("blind_sighted","language_sighted","blind_language"),
+                 labels = c("Blind \nto Sighted", "Language \nto Sighted","Language \nto Blind"))+
     scale_y_continuous(limits=c(-0.2,1))+
     scale_fill_brewer(palette="Set1")+
     ylab("Adjusted Rand Index")+
     xlab("Clustering Comparison")+
-    facet_grid(cluster_num ~ knowledge_type)+
+    facet_grid(cluster_num ~ knowledge_type) +
     theme(legend.position = "none", axis.text.x  = element_text(angle=90, vjust=0.5,size=8))
 ```
 

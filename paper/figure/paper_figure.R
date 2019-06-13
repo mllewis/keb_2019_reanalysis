@@ -4,6 +4,7 @@ library(knitr)
 library(broom)
 library(Matrix)
 library(dendextend)
+library(cowplot)
 
 
 ### Shape-texture-color plot ###
@@ -100,9 +101,6 @@ taxo_corr <- bind_rows(taxonomic_long, language_long_wiki) %>%
   select(-data) %>%
   unnest() 
 
-
-
-
 cor_df <- color_cors %>%
   bind_rows(texture_cors) %>%
   bind_rows(shape_cors) %>%
@@ -117,16 +115,6 @@ cor_df <- color_cors %>%
   mutate(sig = case_when(p.value < .01 ~ "**",
                          p.value < .05 ~ "*",
                          TRUE ~ ""))
-
-# https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0121945
-library(cocor)
-bscorr<-cor(human_data_wide$blind_human_similarity_color,human_data_wide$sighted_human_similarity_color)
-r.jk <-  0.149 # Correlation (language, blind)
-r.jh <- 0.0855  # Correlation (language, sighted)
-r.kh <- bscorr # Correlation (intelligence, shoe size)
-n <- 435 # Size of the group
-cocor.dep.groups.overlap(r.jk, r.jh, r.kh, n, 
-                         var.labels=c("language", "blind", "sighted"))
 
 
 fig_a <- ggplot(cor_df, aes(x = fct_rev(participant_type), y = estimate, fill = participant_type)) +
@@ -217,7 +205,7 @@ fig_b <- ggplot(accuracy_table, aes(x = group, y = estimate, fill = group)) +
 
 blank <- ggplot() +
   theme_void()
-pdf("xfull_plot.pdf", width= 10, height = 10)
+pdf("../figure_ppt3.pdf", width= 10, height = 10)
 top_row <- plot_grid(fig_a, fig_b, 
                      labels = c('A', 'B'), 
                      ncol = 2,
@@ -234,6 +222,23 @@ TIDY_HUMAN_WIKI_DATA <- here("data/processed/tidy_human_wiki_language_data.csv")
 
 all_data <- read_csv(TIDY_HUMAN_WIKI_DATA)
 
+get_hclust <- function(current_sims){
+  wide_sims <- current_sims %>%
+    select(animal1, animal2, similarity_value) %>%
+    spread(animal1, similarity_value) %>%
+    select(-animal2)
+  
+  wide_sims_mat <- as.matrix(wide_sims)
+  rownames(wide_sims_mat) <- colnames(wide_sims)
+  
+  #replace NA's with 0's along the diagonal
+  wide_sims_mat[is.na(wide_sims_mat)] <- 0
+  
+  wide_sims_mat %>%
+    dist() %>%
+    hclust()
+}
+
 all_hclusts <- all_data %>%
   filter(!(knowledge_type %in% c("habitat", "food"))) %>%
   group_by(knowledge_source, knowledge_type) %>%
@@ -241,13 +246,14 @@ all_hclusts <- all_data %>%
   mutate(hclusts = map(data, get_hclust)) %>%
   select(-data)
 
+# Blind - Language
 current_dends <- all_hclusts %>%
   filter(knowledge_type == "shape",
          knowledge_source %in% c("language", "blind")) %>%
   mutate(dendros = map(hclusts, as.dendrogram)) %>%
   pull(dendros)
 
-pdf("tanglegram_shape_blind.pdf", width= 5, height = 5)
+pdf("tanglegram_shape_blindx.pdf", width= 5, height = 5)
 #layout(matrix(1:6, nrow=1, byrow=TRUE), widths= c(5, 3, 5, 5, 3, 5))
 fig1c_1 <- dendlist(current_dends[[1]], current_dends[[2]]) %>%
   untangle(method = "step2side") %>%
@@ -263,14 +269,15 @@ fig1c_1 <- dendlist(current_dends[[1]], current_dends[[2]]) %>%
              main_right ="Blind", just_one = TRUE) 
 dev.off()
 
-pdf("tanglegram_shape_sighted.pdf", width= 5, height = 5)
-
+# Sighted - Language
 current_dends <- all_hclusts %>%
   filter(knowledge_type == "shape",
          knowledge_source %in% c("language", "sighted")) %>%
   mutate(dendros = map(hclusts, as.dendrogram)) %>%
   pull(dendros)
 
+
+pdf("tanglegram_shape_sightedx.pdf", width= 5, height = 5)
 fig1c_2 <- dendlist(current_dends[[1]], current_dends[[2]]) %>%
   untangle(method = "step2side") %>%
   tanglegram(axes = F, color_lines="grey",
