@@ -2,8 +2,8 @@ library(tidyverse)
 library(data.table)
 library(here)
 
-LANG_DISTANCE_OUTPATH <- here("data/processed/animal_color_distances_language_google.csv")
-COLOR_SIM_PATH <- here("data/processed/animal_color_vectors_google.csv")
+LANG_DISTANCE_OUTPATH <- here("data/processed/animal_color_distances_language_coca.csv")
+COLOR_SIM_PATH <- here("data/processed/animal_color_vectors_coca.csv")
 color_sim <- read_csv(COLOR_SIM_PATH)
 
 unique_pairs <- cross_df(list(animal1 = color_sim$animal, animal2  = color_sim$animal))

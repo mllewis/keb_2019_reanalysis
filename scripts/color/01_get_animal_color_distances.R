@@ -3,8 +3,8 @@ library(data.table)
 library(here)
 
 DESC_COLORS <-  here("data/processed/words_to_cache.csv")
-LANG_VECTORS <-  here("data/processed/cached_vectors_wiki.csv")
-OUTPATH <- here("data/processed/animal_color_vectors_wiki.csv")
+LANG_VECTORS <-  here("data/processed/cached_vectors_coca.csv")
+OUTPATH <- here("data/processed/animal_color_vectors_coca.csv")
 
 all_targ_words <- read_csv(DESC_COLORS) 
 colors <- filter(all_targ_words, type == "color") %>%

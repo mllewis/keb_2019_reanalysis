@@ -3,8 +3,8 @@ library(data.table)
 library(here)
 
 ALL_WORDS <-  here("data/processed/words_to_cache.csv")
-LANG_VECTORS <-  here("data/processed/cached_vectors_wiki.csv")
-OUTPATH <- here("data/processed/animal_shape_vectors_wiki.csv")
+LANG_VECTORS <-  here("data/processed/cached_vectors_coca.csv")
+OUTPATH <- here("data/processed/animal_shape_vectors_coca.csv")
 
 all_targ_words <- read_csv(ALL_WORDS) 
 shapes <- filter(all_targ_words, type == "shape") %>%

@@ -2,8 +2,8 @@ library(tidyverse)
 library(data.table)
 library(here)
 
-LANG_DISTANCE_OUTPATH <- here("data/processed/animal_shape_distances_language_google.csv")
-SHAPE_SIM_PATH <- here("data/processed/animal_shape_vectors_google.csv")
+LANG_DISTANCE_OUTPATH <- here("data/processed/animal_shape_distances_language_coca.csv")
+SHAPE_SIM_PATH <- here("data/processed/animal_shape_vectors_coca.csv")
 shape_sim <- read_csv(SHAPE_SIM_PATH)
 
 unique_pairs <- cross_df(list(animal1 = shape_sim$animal, animal2  = shape_sim$animal))
