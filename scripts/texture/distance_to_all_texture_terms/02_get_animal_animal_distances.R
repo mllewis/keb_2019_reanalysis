@@ -2,8 +2,8 @@ library(tidyverse)
 library(data.table)
 library(here)
 
-LANG_DISTANCE_OUTPATH <- here("data/processed/animal_texture_distances_language_coca.csv")
-TEXTURE_SIM_PATH <- here("data/processed/animal_texture_vectors_coca.csv")
+LANG_DISTANCE_OUTPATH <- here("data/processed/animal_texture_distances_language_wiki_gary.csv")
+TEXTURE_SIM_PATH <- here("data/processed/animal_texture_vectors_wiki_gary.csv")
 texture_sim <- read_csv(TEXTURE_SIM_PATH)
 
 unique_pairs <- cross_df(list(animal1 = texture_sim$animal, animal2  = texture_sim$animal))

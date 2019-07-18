@@ -4,8 +4,8 @@ library(here)
 library(data.table)
 
 ANCHOR_WORDS <- here("data/processed/animal_texture_anchor_words.csv")
-WIKIPATH <- "/Users/mollylewis/Documents/research/Projects/1_in_progress/VOCAB_SEEDS/analyses/0_exploration/wiki.en.vec"
-OUTPATH <- here("data/processed/animal_texture_langauge_distances_with_anchors.csv")
+WIKIPATH <- #"/Users/mollylewis/Documents/research/Projects/1_in_progress/VOCAB_SEEDS/analyses/0_exploration/wiki.en.vec"
+OUTPATH <- #here("data/processed/animal_texture_langauge_distances_with_anchors.csv")
 
 TIDY_HUMAN_TEXTURE <- here("data/processed/tidy_human_texture_response.csv")
 human_texture_data <- read_csv(TIDY_HUMAN_TEXTURE)
