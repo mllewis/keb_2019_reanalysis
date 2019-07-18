@@ -103,7 +103,7 @@ taxonomic_long <- taxonomic_data %>%
   rownames_to_column("animal1") %>%
   gather("animal2", "similarity", -animal1) %>%
   mutate(sim_type = "taxonomic_similarity")
-LANGUAGE_PATH_WIKI <- here("data/processed/animal_distances_wiki.csv")
+LANGUAGE_PATH_WIKI <- here("data/processed/animal_distances_coca.csv")
 language_data_wiki <- read_csv(LANGUAGE_PATH_WIKI) %>%
   spread(word2, language_similarity) %>%
   select(-word1)
