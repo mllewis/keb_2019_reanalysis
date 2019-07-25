@@ -1,8 +1,7 @@
-Distributional semantics as a source of visual knowledge: Commentary on Kim, Elli, and Bedny (2019), _PNAS_ 
-===
-
 Lewis, Zettersten, & Lupyan (in press)
 
+Distributional semantics as a source of visual knowledge: Commentary on Kim, Elli, and Bedny (2019), _PNAS_ 
+===
 
 <img src="paper/results/figureppt3.png?raw=true" height="400">
 
