@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  14 JUN 2019 10:41
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  25 JUL 2019 15:46
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -335,11 +335,12 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <6> on input line 31.
  [2]
-<figureppt3.pdf, id=17, 540.8431pt x 415.51488pt>
-File: figureppt3.pdf Graphic file (type pdf)
- <use figureppt3.pdf>
-Package pdftex.def Info: figureppt3.pdf used on input line 40.
-(pdftex.def)             Requested size: 505.89pt x 388.68196pt.
+<results/figureppt3.pdf, id=17, 541.90602pt x 408.70842pt>
+File: results/figureppt3.pdf Graphic file (type pdf)
+
+<use results/figureppt3.pdf>
+Package pdftex.def Info: results/figureppt3.pdf used on input line 40.
+(pdftex.def)             Requested size: 505.89pt x 381.56044pt.
 
 Overfull \hbox (5.406pt too wide) in paragraph at lines 40--41
  [][] 
@@ -350,7 +351,7 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 Missing character: There is no â in font cmr12!
 Missing character: There is no € in font cmr12!
 Missing character: There is no “ in font cmr12!
-[3 <./figureppt3.pdf>]
+[3 <./results/figureppt3.pdf>]
 Missing character: There is no Ä in font cmr12!
 Missing character: There is no ‡ in font cmr12!
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 63.
@@ -364,8 +365,8 @@ Package rerunfilecheck Info: File `keb_2019_reanalysis.out' has not changed.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 63.
  ) 
 Here is how much of TeX's memory you used:
- 6599 strings out of 493014
- 102097 string characters out of 6133351
+ 6600 strings out of 493014
+ 102137 string characters out of 6133351
  195583 words of memory out of 5000000
  10097 multiletter control sequences out of 15000+600000
  9065 words of font info for 32 fonts, out of 8000000 for 9000
@@ -380,10 +381,10 @@ r/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/
 local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/l
 ocal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb></usr/lo
 cal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb>
-Output written on keb_2019_reanalysis.pdf (4 pages, 166180 bytes).
+Output written on keb_2019_reanalysis.pdf (4 pages, 184856 bytes).
 PDF statistics:
- 111 PDF objects out of 1000 (max. 8388607)
- 85 compressed objects within 1 object stream
+ 124 PDF objects out of 1000 (max. 8388607)
+ 94 compressed objects within 1 object stream
  7 named destinations out of 1000 (max. 500000)
  6 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -1,0 +1,119 @@
+---
+title: Bedny et al. (2019) Human- Language comparision
+author: Molly Lewis 
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    number_sections: no
+    toc: yes
+---
+  
+******
+
+```{r setup, include = F}
+
+# load packages
+library(rmarkdown)
+library(knitr)
+library(tidyverse)
+library(here)
+library(broom)
+
+opts_chunk$set(echo = T, message = F, warning = F, 
+               error = F, tidy = F, cache = F)
+```
+light-light words only. 
+```{r}
+BEDNY_DATA <- here("data/raw/datalong_CBSAMT.csv")
+bedny_data <- read_csv(BEDNY_DATA)
+
+sim_ratings <-bedny_data %>%
+  filter(C1 == "Light", C2 == "Light") %>%
+  select(contains("V"), contains("_")) %>%
+  rename(word1 = V1,
+         word2 = V2) %>%
+  gather("subject_id", "raw_similarity", -word1, -word2) %>%
+  group_by(subject_id) %>%
+  mutate(scale_similarity = scale(raw_similarity),
+         norm_similarity = (scale_similarity - min(scale_similarity))/
+           (max(scale_similarity) - min(scale_similarity))) %>%
+  mutate(group_type = case_when(str_detect(subject_id, "CB_")~ "CB",
+                                str_detect(subject_id, "S_")~ "S",
+                                str_detect(subject_id, "AMT_")~ "AMT"))
+
+mean_ratings <- sim_ratings %>%
+  group_by(group_type, word1, word2) %>%
+  filter(!is.na(norm_similarity))%>%
+  summarize(similarity = mean(norm_similarity)) 
+
+# get language distances
+LANGUAGE_DISTANCES <- here("data/processed/bedny_2019_lang_distances.csv")
+long_word_word_dists <- read_csv(LANGUAGE_DISTANCES)
+```
+
+
+## all words
+```{r, fig.height = 3.5}
+all_data <- mean_ratings %>%
+  left_join(long_word_word_dists)
+
+ggplot(all_data, aes(x = language_similarity, y = similarity))+
+  geom_point() + 
+  #geom_text(aes(label = word1)) +
+  ylab("human similarity")+
+  geom_smooth(method = "lm") +
+  facet_grid(~group_type) + 
+  theme_classic()
+```
+
+```{r}
+all_data %>%
+  group_by(group_type)%>%
+  nest() %>%
+  mutate(temp = map(data, ~tidy(cor.test(.$similarity, .$language_similarity,  method = "spearman")))) %>%
+  select(-data) %>%
+  unnest()
+```
+
+
+```{r}
+cb_s <- all_data %>% 
+  filter(group_type != "AMT") %>%
+  select(-language_similarity) %>%
+  spread(group_type, similarity)
+
+ggplot(cb_s, aes(x = CB, y = S))+
+  ggtitle("Sighted vs. Blind") +
+  geom_point() + 
+  geom_smooth(method = "lm") +
+  theme_classic()
+
+cor.test(cb_s$S, cb_s$CB, method = "spearman") %>%
+  tidy() %>%
+  rename(rho = estimate) 
+```
+
+
+## excluding "blink"
+```{r, fig.height = 3.5}
+ggplot(all_data %>% filter(word1 != "blink", word2 != "blink"), 
+       aes(x = language_similarity, y = similarity))+
+  geom_point() + 
+  #geom_text(aes(label = word1)) +
+  ylab("human similarity")+
+  geom_smooth(method = "lm") +
+  facet_grid(~group_type) + 
+  theme_classic()
+
+all_data %>%
+  filter(word1 != "blink", word1 != "blink") %>%
+  group_by(group_type)%>%
+  nest() %>%
+  mutate(temp = map(data, ~tidy(cor.test(.$similarity, .$language_similarity, method = "spearman")))) %>%
+  select(-data) %>%
+  unnest()
+```
+
+ITEMS: 
+`r unique(long_word_word_dists$word1)`

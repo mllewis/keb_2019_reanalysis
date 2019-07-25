@@ -16,7 +16,6 @@ LABELS <- c("shark", "swan", "flamingo", "pigeon", "crow", "elephant",
 colnames(taxonomic_data) <- LABELS
 rownames(taxonomic_data) <- LABELS
 
-
 taxonomic_long <- taxonomic_data %>%
   as.data.frame() %>%
   rownames_to_column("animal1") %>%

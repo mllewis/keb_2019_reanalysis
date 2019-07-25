@@ -1,0 +1,123 @@
+---
+title: Bedny et al. (2019) Human- Language comparision
+author: Molly Lewis 
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    code_folding: hide
+    number_sections: no
+    toc: yes
+---
+  
+******
+
+```{r setup, include = F}
+
+# load packages
+library(rmarkdown)
+library(knitr)
+library(tidyverse)
+library(here)
+library(broom)
+
+opts_chunk$set(echo = T, message = F, warning = F, 
+               error = F, tidy = F, cache = F)
+```
+
+```{r}
+library(tidyverse)
+library(here)
+library(knitr)
+library(broom)
+library(Matrix)
+library(dendextend)
+library(cowplot)
+
+
+TAXONOMIC_PATH <- here("data/raw/taxonomy_matrix.mat")
+taxonomic_data <- R.matlab::readMat(TAXONOMIC_PATH)[[2]]  
+LABELS <- c("shark", "swan", "flamingo", "pigeon", "crow", "elephant", 
+            "mammoth", "sloth", "beaver", "gorilla", "bat", "rhino", 
+            "zebra", "llama", "hippo", "killerwhale", "dolphin", "giraffe",
+            "sheep", "goat", "deer", "pig", "boar", "lion", "panther", "cheetah",
+            "skunk", "panda", "polarbear", "grizzly") %>% rev() # from SI fig s2
+colnames(taxonomic_data) <- LABELS
+rownames(taxonomic_data) <- LABELS
+taxonomic_long <- taxonomic_data %>%
+  as.data.frame() %>%
+  rownames_to_column("animal1") %>%
+  gather("animal2", "similarity", -animal1) %>%
+  mutate(sim_type = "taxonomic_similarity")
+```
+
+
+## ALL COCA CLEANED
+```{r}
+LANGUAGE_PATH <- here("data/processed/animal_distances_coca_all_cleaned_gary.csv")
+
+language_data <- read_csv(LANGUAGE_PATH) %>%
+  spread(word2, language_similarity) %>%
+  select(-word1)
+
+all_corrs_mat_langs <- as.matrix(language_data)
+rownames(all_corrs_mat_langs) <- colnames(all_corrs_mat_langs)
+language_long <- all_corrs_mat_langs %>%
+  as.data.frame() %>%
+  rownames_to_column("animal1") %>%
+  gather("animal2", "similarity", -animal1)   %>%
+  mutate(sim_type = "language_coca_all")
+
+taxo_corr <- bind_rows(taxonomic_long, language_long) %>%
+  filter(animal1 < animal2) %>%
+  spread(sim_type, similarity)  %>%
+  mutate(participant_type = "Ground Truth") %>%
+  group_by(participant_type) %>%
+  nest() %>%
+  mutate(temp = map(data, ~ tidy(cor.test(.$language_coca_all,
+                                          -.$taxonomic_similarity, method = "spearman"))),
+         n = map(data, nrow),
+         dimension = "Taxonomy")  %>%
+  select(-data) %>%
+  unnest()  %>%
+    mutate(se = 1/sqrt(n-3),
+         estimate_se_l = estimate - se,
+         estimate_se_h = estimate + se,)
+
+kable(taxo_corr)
+```
+
+## ALL COCA CLEANED ANIMAL
+```{r}
+LANGUAGE_PATH <- here("data/processed/animal_distances_coca_all_cleaned_animal_gary.csv")
+
+language_data <- read_csv(LANGUAGE_PATH) %>%
+  spread(word2, language_similarity) %>%
+  select(-word1)
+
+all_corrs_mat_langs <- as.matrix(language_data)
+rownames(all_corrs_mat_langs) <- colnames(all_corrs_mat_langs)
+language_long <- all_corrs_mat_langs %>%
+  as.data.frame() %>%
+  rownames_to_column("animal1") %>%
+  gather("animal2", "similarity", -animal1)   %>%
+  mutate(sim_type = "language_coca_al_animal")
+
+taxo_corr <- bind_rows(taxonomic_long, language_long) %>%
+  filter(animal1 < animal2) %>%
+  spread(sim_type, similarity)  %>%
+  mutate(participant_type = "Ground Truth") %>%
+  group_by(participant_type) %>%
+  nest() %>%
+  mutate(temp = map(data, ~ tidy(cor.test(.$language_coca_al_animal,
+                                          -.$taxonomic_similarity,
+                                          method = "spearman"))),
+         n = map(data, nrow),
+         dimension = "Taxonomy")  %>%
+  select(-data) %>%
+  unnest()  %>%
+  mutate(se = 1/sqrt(n-3),
+         estimate_se_l = estimate - se,
+         estimate_se_h = estimate + se,)
+
+kable(taxo_corr)
+```

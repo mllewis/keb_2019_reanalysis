@@ -27,6 +27,7 @@ library(cowplot)
 library(broom)
 library(R.matlab)
 library(heatmaply)
+library(psych)
 
 
 opts_chunk$set(echo = F, message = F, warning = F, 
@@ -59,7 +60,7 @@ map_df(DESCRIPTIONS_PATHS, read_csv) %>%
 
 
 ## Pairwise Correlations{.tabset}
-In the Main Text, we report correlations between the pairwise animals distances for each of the three dimensions (language vs. human/gorund truth). These are presented more fully below.
+In the Main Text, we report correlations between the pairwise animals distances for each of the three dimensions (language vs. human/ground truth). These are presented more fully below.
 
 ```{r, fig.width = 8, fig.height = 4}
 ### Shape-texture-color plot ###
@@ -135,7 +136,7 @@ language_long_wiki <- all_corrs_mat_langs_wiki %>%
   mutate(sim_type = "lang_wiki_similarity")
 ```
 
-```{r, fig.width = 5, fig.height = 4}
+```{r, fig.width = 4, fig.height = 4}
 taxo_full <- bind_rows(taxonomic_long, language_long_wiki) %>%
   filter(animal1 < animal2) %>%
   spread(sim_type, similarity)  %>%
@@ -174,11 +175,13 @@ taxo_corr <- taxo_full %>%
 cor_df <- dimension_corr %>%
   bind_rows(taxo_corr) %>%
   select(-method, -alternative, -statistic) %>%
+  rename(rho = estimate) %>%
   mutate(similarity_type = fct_relevel(similarity_type, "taxonomy", "shape", "texture"),
-         participant_type = str_to_title(participant_type))  %>%
-  arrange(similarity_type)
+         participant_type = str_to_title(participant_type),
+         fisher_transformed_rho = fisherz(rho))  %>%
+  arrange(similarity_type) 
 
-kable(cor_df,digits = 5)
+kable(cor_df, digits = 5)
 ```
 
 Notably, in a regression predicting human similarity with both taxonomic and linguistic similarity, both measures predict independent variance in human judgements for all three dimensions. 
@@ -205,7 +208,7 @@ lm(human_similarity_color~ language_similarity_simple_dist_texture +
    data = lm_df %>% mutate_if(is.numeric, scale)) %>%
   summary() %>%
   tidy()%>%
-  kable(digits=5)
+  kable(digits= 5)
 ```
 
 ### Shape
@@ -660,14 +663,17 @@ taxo_corr <- bind_rows(taxonomic_long, language_long_wiki) %>%
   select(-data) %>%
   unnest() 
 
+# merge together
 cor_df <- color_cors %>%
   bind_rows(texture_cors) %>%
   bind_rows(shape_cors) %>%
   bind_rows(taxo_corr) %>%
   select(-method, -alternative, -statistic) %>%
-  mutate(se = 1/sqrt(n-3),
-         estimate_se_l = estimate - se,
-         estimate_se_h = estimate + se,
+  rename(rho = estimate) %>%
+  mutate(z = fisherz(rho), # z-transform
+         se = 1/sqrt(n - 3), #https://en.wikipedia.org/wiki/Fisher_transformation
+         estimate_se_l = z - se,
+         estimate_se_h = z + se,
          dimension = fct_relevel(dimension, "Taxonomy", "Shape", "Skin Texture"),
          participant_type = str_to_title(participant_type)) %>%
   rowwise() %>%
@@ -675,11 +681,11 @@ cor_df <- color_cors %>%
                          p.value < .05 ~ "*",
                          TRUE ~ ""))
 
-ggplot(cor_df, aes(x = fct_rev(participant_type), y = estimate, fill = participant_type)) +
+ ggplot(cor_df, aes(x = fct_rev(participant_type), y = z, fill = participant_type)) +
   geom_bar(stat = "identity", position = "dodge") +
   facet_grid(~dimension, drop = T, scales="free_x",space = "free_x") +
   xlab("Language as predictor of...") +
-  geom_text(aes(y = estimate + .07, label = sig), size = 6) +
+  geom_text(aes(y = z + .07, label = sig), size = 6) +
   geom_linerange(aes(ymin = estimate_se_l, ymax = estimate_se_h)) +
   theme_classic(base_size = 13) +
   scale_fill_manual(values = c( "#0345E1", "yellow","#DB3A26")) +
@@ -785,7 +791,7 @@ sim_ratings <-bedny_data %>%
 
 We analyzed the 15 "light emission" verbs used by Bedny et al. (2019). We selected this set of items because they refer to a domain which blind participants have most limited direct perceptual access to. The 15 items are: `r  unique(c(sim_ratings$word1, sim_ratings$word2))`. We estimated the pairwise similarity of these words from distributional semantics (cosine distance) using a model trained on English Wikipedia (Bojanowski, et al. 2016), and then compared these distances to human similarity judgements. 
 
-Presented below are the correlations between human judgements (blind, sighted, and a sample from Mechanical Turk; from Bedny et al., 2019) and estimates from the language model. The red points indicate pairs that include the item "blink," which appears to be an outlier -- presumably because blink also has a frequent sense that doesn't refer to light emission (i.e., a blinking eye). In the Main Text, we report correlation values with this item excluded; below are all correlation values with and without this item.
+Presented below are the correlations (Spearman's rho) between human judgements (blind, sighted, and a sample from Mechanical Turk; from Bedny et al., 2019) and estimates from the language model. The red points indicate pairs that include the item "blink," which appears to be an outlier -- presumably because blink also has a frequent sense that doesn't refer to light emission (i.e., a blinking eye). In the Main Text, we report correlation values with this item excluded; below are all correlation values with and without this item.
 
 ```{r, fig.height = 3.5}
 mean_ratings <- sim_ratings %>%
@@ -823,6 +829,18 @@ all_data %>%
   unnest() %>%
   kable(digits = c(NA,2,1,8,NA,NA))
 ```
+
+```{r}
+b_vs_s_all <- all_data %>%
+  select(group_type, word1, word2, similarity) %>%
+  spread(group_type, similarity)
+
+b_vs_s_cor_all <- cor.test(b_vs_s_all$Blind, b_vs_s_all$Sighted, method = "spearman") %>%
+  tidy() %>%
+  mutate_if(is.numeric, round, 2)
+```
+
+Including all items, the correlation between blind and sighted participants is $\rho$ = `r pull(b_vs_s_cor_all, estimate)` (_p_ < .01).
 
 Correlations with "blink" excluded: 
 ```{r}

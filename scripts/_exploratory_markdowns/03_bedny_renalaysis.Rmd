@@ -88,7 +88,10 @@ ggplot(cb_s, aes(x = CB, y = S))+
   geom_point() + 
   geom_smooth(method = "lm") +
   theme_classic()
-cor.test(cb_s$S, cb_s$CB)
+
+cor.test(cb_s$S, cb_s$CB, method = "spearman") %>%
+  tidy() %>%
+  rename(rho = estimate) 
 ```
 
 
