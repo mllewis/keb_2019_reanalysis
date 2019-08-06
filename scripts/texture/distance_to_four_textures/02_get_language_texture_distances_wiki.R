@@ -4,7 +4,7 @@ library(here)
 library(data.table)
 
 TIDY_HUMAN_TEXTURE <- here("data/processed/tidy_human_texture_response.csv")
-OUTPATH <- here("data/processed/animal_texture_langauge_distances.csv")
+OUTPATH <- here("data/processed/animal_texture_langauge_distances_wiki.csv")
 WIKIPATH <- "/Users/mollylewis/Documents/research/Projects/1_in_progress/VOCAB_SEEDS/analyses/0_exploration/wiki.en.vec"
 
 human_texture_data <- read_csv(TIDY_HUMAN_TEXTURE)

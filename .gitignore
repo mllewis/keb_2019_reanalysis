@@ -14,6 +14,7 @@ stimuli/*
 *4-Word-Embedding/*
 *keb_SI_files/*
 *keb_SI_cache/*
+*.log
 
 resources/*
 *.feather

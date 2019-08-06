@@ -50,7 +50,7 @@ texture_cors <- full_sim_data_wide %>%
   unnest() 
 
 # shape
-shape_cors <- full_sim_data_wide2 %>%
+shape_cors <- full_sim_data_wide %>%
   group_by(participant_type) %>%
   nest() %>%
   mutate(temp = map(data, ~ tidy(cor.test(.$language_similarity_simple_dist_shape,
@@ -141,16 +141,15 @@ kable(cor_df)
 
 ### Texture plot  ###
 TIDY_HUMAN_TEXTURE <- here("data/processed/tidy_human_texture_response.csv")
-LANGUAGE_SIMILARITY <- here("data/processed/animal_texture_langauge_distances_with_anchors.csv")
+LANGUAGE_SIMILARITY <- here("data/processed/animal_texture_langauge_distances_wiki.csv")
 
 human_data <- read_csv(TIDY_HUMAN_TEXTURE) %>%
   rename(similarity = prop) %>%
   select(-correct)
 
 language_data  <- read_csv(LANGUAGE_SIMILARITY) %>%
-  filter(set_id == 0) %>%
-  select(-set_id) %>%
-  rename(texture = anchor)  
+  rename(animal = word1, 
+         texture = word2) 
 
 language_and_human_df <- left_join(human_data, language_data)
 
